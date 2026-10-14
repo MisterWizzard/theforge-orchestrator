@@ -1,0 +1,25 @@
+{
+  "name": "@theforge/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/index.ts"
+  },
+  "dependencies": {
+    "@theforge/contracts": "workspace:*",
+    "@theforge/policy": "workspace:*",
+    "@theforge/provider-claude": "workspace:*",
+    "@theforge/provider-codex": "workspace:*",
+    "@theforge/provider-ollama": "workspace:*",
+    "@theforge/providers": "workspace:*",
+    "zod": "^3.25.76",
+    "@theforge/guardrails": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

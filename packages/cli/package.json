@@ -1,0 +1,23 @@
+{
+  "name": "@theforge/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "forge": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsup src/main.ts --format esm",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@theforge/contracts": "workspace:*",
+    "@theforge/db": "workspace:*",
+    "@theforge/guardrails": "workspace:*",
+    "@theforge/notify": "workspace:*",
+    "@theforge/tier0": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

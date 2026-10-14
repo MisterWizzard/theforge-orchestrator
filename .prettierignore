@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+coverage
+pnpm-lock.yaml
+# Preserve the repository's binding, pre-existing governance documents verbatim.
+.github/pull_request_template.md
+NEXT_BUILD_PROMPT.md
+docs/ARCHITECTURE.md
+docs/BUILD_PLAN.md
+docs/DECISIONS.md
+docs/EXECUTION_PROTOCOL.md
+docs/PRODUCT_SPEC.md
+docs/SECURITY.md
+docs/VISION.md

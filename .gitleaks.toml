@@ -1,0 +1,16 @@
+title = "TheForge"
+
+[extend]
+useDefault = true
+
+# These files contain deliberately fake credentials. They are the fixtures that prove the
+# redaction and policy code recognises credentials, so each one has to look like a credential.
+# Each value was checked by structure on 14/10/2026: placeholder words (hunter2, abcdef…),
+# repeated or sequential characters, or shapes that do not decode. None is a live secret.
+[[allowlists]]
+description = "Redaction and policy tests use fake credentials on purpose"
+paths = [
+  '''(^|/)apps/worker/src/index\.test\.ts$''',
+  '''(^|/)packages/policy/src/policy\.test\.ts$''',
+  '''(^|/)packages/guardrails/src/guardrails\.test\.ts$''',
+]

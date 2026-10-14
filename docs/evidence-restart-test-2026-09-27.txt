@@ -1,0 +1,112 @@
+Evidence: S5.3 restart test on the registered runtime (Operations S5.3)
+27/09/2026, NODEE, main @ 8136213. Coordinator and worker running as the Windows scheduled
+tasks "TheForge Coordinator" and "TheForge Worker" (Interactive, registered 01:54), not by hand.
+Daily ceiling $20, day total $0.00 at the start.
+
+PRECONDITION: pnpm forge runtime doctor -> 13/13 checks passed, including the new
+"web operator password set (16+ characters)" check from ADR-027.
+
+=== Attempt 1 (01:55-02:10) - FAILED, two defects found ==================================
+
+Run 485111dd-6fe6-4496-9d7f-5fe588394a0b on the acceptance fixture, all roles Claude by
+default (ADR-024), maxUsd 5. Objective: add a clamp(value, min, max) helper.
+
+Timeline:
+  01:55:43  run created, started; workspace.ready; provider diagnostics all available
+  01:55:49  routing.decided planner -> claude tier 3; provider.claude.worker_job_queued
+            (jobId 8dcbb856); worker_job.leased by nodee-worker-1
+  01:56:01  coordinator process (pid 56772) killed with Stop-Process -Force, mid-planner.
+            run-coordinator.ps1 logged "node exited with code -1".
+  01:56-02:03  port 4400 dead. The scheduled task sat at State=Ready with an empty
+            NextRunTime for over 7 minutes and NEVER restarted, despite RestartCount 999
+            and RestartInterval PT1M being set on the task (LastTaskResult 0xFFFFFFFF).
+            Meanwhile the worker stayed alive and kept retrying the coordinator with
+            ECONNREFUSED - correct behaviour, holding its lease, spending nothing.
+  02:09:34  coordinator brought back by hand (pnpm forge runtime start).
+            Recovery machinery worked: 1109 worker_job.lease_reconciled -> state queued,
+            1111 attempt.lease_expired -> recoveredTo ready, 1113 workspace.ready.
+            Then 1115/1117/1119 provider.diagnostic: claude, codex and ollama ALL
+            "No online worker advertises provider:..." because a freshly started
+            coordinator has no registered workers yet, and 1121 run.failed
+            "No authenticated provider is available".
+            1123 worker_job.leased - the worker re-registered and re-leased the same job
+            ONE EVENT LATER. 1125 worker_job.completed.
+
+Cost and integrity after attempt 1: 0 usage records for the run, day total $0.0000, the
+worker's stale session correctly fenced (HTTP 401 worker_session_invalid) before it
+re-registered, and the run.failed escalation delivered to file AND email
+("Escalation run.failed sent via file, email"). Nothing was lost or double-charged.
+
+Two defects, recorded separately because they are independent:
+  BLK-017  Task Scheduler's restart-on-failure does not restart these tasks at all.
+  BLK-018  A resumed run fails on a cold coordinator start because provider availability
+           is evaluated before any worker re-registers.
+
+=== BLK-017 fix, verified (02:18) =======================================================
+
+scripts/runtime/register-runtime.ps1 now adds a watchdog trigger per task: a Once trigger
+with a repetition interval and no duration, which repeats for the life of the task on
+Windows 10 and later, alongside the logon trigger. MultipleInstances IgnoreNew makes each
+repeat a no-op while the process lives; the first repeat after a death starts it again. It
+does not use the restart-on-failure machinery that failed above. -WatchdogMinutes tunes the
+interval (default 1); -NoWatchdog restores the old behaviour.
+
+  02:18:21  coordinator (pid 44548) killed with Stop-Process -Force
+  02:18:32  port 4400 = 0, task State = Ready
+  02:18:43  port 4400 = 1, task State = Running   <- REVIVED, 22 seconds
+The task's scheduled NextRunTime was 02:18:35, so the watchdog fired exactly on schedule.
+Both tasks now report Triggers.Count = 2.
+
+Side effect handled: while healthy, the ignored repeat makes Task Scheduler record
+0x800710E0 / 0x8004131F as the task's last result every minute. `pnpm forge runtime status`
+now names both as "watchdog repeat refused/ignored, the task is already running (healthy)"
+so an operator does not chase a phantom failure; 0xFFFFFFFF is deliberately left as
+unknown, so a genuinely killed process still reads as a fault.
+
+=== Attempt 2 (02:44-02:50) - PASSED ====================================================
+
+Both defects fixed: the watchdog trigger (BLK-017) and the bounded provider wait of ADR-029
+(BLK-018). Both runtime processes were killed first so the tasks would pick up the rebuilt
+dist; the watchdog brought both back by itself in about 40 s, which also shows it supervises
+the worker and not only the coordinator.
+
+Run 0d7d977f-103b-441b-aaa9-a6af36471bb7, same fixture, all roles Claude, maxUsd 5.
+
+  02:45:01  run created and started
+  02:45:07  1137 routing.decided planner -> cloud; 1141 worker_job.leased (job 78721dc0)
+  02:45:18.9 coordinator (pid 60428) killed with Stop-Process -Force, mid-planner
+  02:45:39  port 4400 listening again - REVIVED BY THE WATCHDOG IN 21 SECONDS, no human action
+  then      1143 attempt.lease_expired, 1145 workspace.ready   (recovery, as before)
+            1153 routing.decided planner  <- the run was re-driven instead of failed
+            1157 worker_job.leased, THE SAME jobId 78721dc0   <- re-leased, not duplicated
+            1169 critic, 1185 planner revision, 1201 builder, 1227 reviewer, all cloud
+            1241 review.completed round 1, approved, findings recorded
+            1247 integration.committed 9e896aa013e88003b549a5b4cae72fc476e00877
+            1249 approval.requested, actionClass amber
+  02:49:53  run.finished, state partially_completed, blocker "Approve push of the isolated
+            non-protected branch and draft PR creation" - the approval gate, not a failure
+
+Verification ran the project's real check in the sandbox: node --test, "# pass 8 / # fail 0".
+
+Cost: 5 usage records, all claude, $1.5881 total of the $5 budget - one record per stage
+(planner, critic, planner revision, builder, reviewer). The planner job was leased twice
+(1141 and 1157) and billed ONCE, so the restart cost nothing and double-charged nothing.
+
+No run.failed and no run.paused_by_guard anywhere in the trace.
+
+HONEST CAVEAT: this run did NOT emit provider.wait_started, so the ADR-029 wait itself was
+never entered here - the worker had already re-registered by the time the resumed pipeline
+read provider availability. The race is timing-dependent, which is exactly why the fix is a
+bounded wait rather than a reordering. The wait mechanism is proven instead by its own tests,
+including a counterfactual: with the wait budget forced to 0 both coordinator tests fail and
+reproduce the attempt-1 trace exactly (run.created, run.pause, run.resume_requested,
+workspace.ready, three provider.diagnostic, run.failed). What attempt 2 proves is the
+end-to-end property S5.3 asks for: a coordinator killed mid-run comes back on its own and the
+run finishes, with nothing lost and nothing charged twice.
+
+=== Status =============================================================================
+
+S5.3 PASSED, 27/09/2026. Supervision: fixed (BLK-017) and measured twice, 22 s and 21 s.
+Resumption: fixed (BLK-018 / ADR-029), proven end to end above and by unit tests plus a
+counterfactual. Remaining known gap, unrelated to this test: `pnpm forge runtime stop` is
+undone by the watchdog within a minute, so the kill switch is the durable stop.

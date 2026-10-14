@@ -1,0 +1,91 @@
+Evidence: live cross-provider run, critic on Codex (F050, F051; ADR-001; policy C7)
+Recorded 27/09/2026 ~21:47 AEST (2026-09-26T11:47Z) on NODEE, main @ 8136213 plus the
+FORGE_CODEX_AUTH_FILE line described below. Coordinator and worker started by hand from
+C:\forge\repos\TheForge; daily ceiling at its $20 default.
+
+Run id: e3de1306-ada4-4a8d-85ea-2d2becc034a7
+Project: acceptance-fixture (project-1790257112080), a dependency-free ESM fixture
+         whose only check is `node --test`.
+Objective: add an exported truncate(text, maxLength) to app.js with exact-length boundary
+         behaviour, a TypeError for a non-string text, a RangeError for maxLength that is not
+         an integer >= 2, and full branch coverage in app.test.js.
+Budget: maxUsd 5 (the ADR-024 default), maxTokens 100000.
+Pinned roles: {planner: claude, critic: codex, builder: claude, reviewer: claude} (Q18 option a).
+
+--- Prerequisite discovered and fixed ------------------------------------------------------
+apps/worker/src/index.ts resolveProviderCredential() reads env.FORGE_CODEX_AUTH_FILE for the
+codex provider and throws "No isolated codex credential is configured" when it is unset. The
+variable was absent from .env, so `codex login` alone was not sufficient. Added:
+  FORGE_CODEX_AUTH_FILE=C:\Users\operator\.codex\auth.json
+After that the coordinator advertised all of: claude available+authenticated, codex
+available+authenticated ("codex is available on worker Nodee"). ollama was NOT advertised
+in this run: the Ollama server was down (127.0.0.1:11434 refused), which is the supervision gap
+Q11 deliberately left open. Irrelevant here because every role was cloud.
+
+--- Routing (routing.decided events, in order) ---------------------------------------------
+planner   claude  tier 3 cloud  "architecture routes to cloud by default"
+critic    codex   tier 3 cloud  "code_review routes to cloud by default"
+planner   claude  tier 3 cloud  "architecture routes to cloud by default"   (revision)
+builder   claude  tier 3 cloud  "multi_file_feature routes to cloud by default"
+reviewer  claude  tier 3 cloud  "code_review routes to cloud by default"
+provider.session events confirm the same split, including {role: critic, provider: codex,
+sessionId: 01a0dd8b-1467-7d33-940e-7ba416b57a2f}, and provider.codex.worker_job_finished
+returned code 0.
+
+--- Cost accounting (usage_records) --------------------------------------------------------
+provider | calls | usd     | tokens (in+out)
+claude   |   4   | 2.0733  | 13,004
+codex    |   1   | 0.0000  | 28,760   (27,490 in / 1,270 out)
+Run total: $2.0733 of $5.00, 41,764 tokens of 100,000.
+This is the F111 requirement: Codex's call is recorded as a subscription call at cost_usd 0
+WITH its real token counts, not omitted. The guards therefore leave the day's metered total at
+$2.0733 and the digest reports the Codex call under "unmetered ... (subscription): $0, not
+counted against the ceiling".
+
+--- The cross-provider critique actually changed the output ---------------------------------
+This is the part a fake-adapter test cannot prove. Codex's critique raised two findings:
+  1. Medium - "`npm run check` is unsupported by the stated evidence. The context only
+     identifies "test": "node --test". Unless package.json also defines check, that command
+     will fail."
+  2. Low - "Invalid maxLength coverage is too narrow ... tests only exercise 2.5. Add
+     representative cases such as NaN, Infinity, and '5'. Also test another integer below 2."
+The Claude planner then revised the plan and handled them differently, on evidence:
+  - It REFUTED #1 by reading the repository: "package.json defines both check and test scripts
+    ("check": "node --test", "test": "node --test"), so npm run check is fully supported -
+    critique #1 is refuted by evidence, not a defect."
+  - It ADOPTED #2. The committed test file contains exactly those cases:
+    "throws RangeError when maxLength is NaN", "... is Infinity", "... is not a number",
+    "... is 1", plus the exact-length boundary and the minimum valid maxLength of 2.
+So the other-provider critique was neither rubber-stamped nor ignored; one point was rejected
+with repository evidence and one was incorporated.
+
+--- Outcome --------------------------------------------------------------------------------
+review.completed round 1: approved true, findings [].
+Deterministic verification ran the project's real check in the sandbox: node --test,
+exit code 0, "# pass 16 / # fail 0" (1 pre-existing test plus 15 new).
+integration.committed 086e3d81b16c40ca29b76319b74d7cb57a9e4b61 in the retained workspace
+C:\forge\workspaces\worktrees\e3de1306-...-implementation:
+  app.js       +11
+  app.test.js  +71 -1
+  2 files changed, 81 insertions(+), 1 deletion(-)
+The implementation is correct as specified (slice(0, maxLength - 1) + U+2026, TypeError for a
+non-string, RangeError for a bad maxLength).
+
+Final state: partially_completed, blocker "Approve push of the isolated non-protected branch
+and draft PR creation", approval.requested approvalId 0ed8de42-3bf4-48ec-9848-eb5fcf418882,
+actionClass amber. Nothing was pushed: the fixture repository still has only main and
+forge/9d6cf990. That state reflects the approval gate working as designed, not a defect - every
+provider stage, the review, the verification and the commit all succeeded before it. F050/F051
+do not require the push, so they are satisfied by this run.
+
+--- Defect found: the Codex critic had no shell (BLK-016) -----------------------------------
+Codex's own words at the start of its critique: "The workspace shell is unavailable because its
+sandbox cannot create a user namespace. I'll still audit the plan itself, but
+repository-specific 'verified' claims remain independently unverified in this run."
+The Codex CLI sandboxes itself (landlock/seccomp plus a user namespace) and cannot do so inside
+TheForge's already-restricted container - non-root, read-only root filesystem, dropped
+capabilities, no CAP_SYS_ADMIN. The critic therefore reviewed the plan text blind to the
+repository, which is exactly why it raised finding #1 that the planner then refuted by looking.
+Consequence: a Codex critic is materially weaker than a Claude one today, and any Codex stage
+that needs to read files is degraded. Recorded as BLK-016; the likely fix is to tell the Codex
+CLI not to sandbox itself, because the container already is the sandbox.

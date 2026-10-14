@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    # Come back with the Docker engine. Without this, the reboot of 27/09/2026
+    # left both containers `Exited (255)`, the coordinator could not reach its
+    # database, and the runtime never recovered unattended (BLK-019).
+    # `unless-stopped` rather than `always`, so a deliberate
+    # `docker compose stop` still sticks.
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: forge
+      POSTGRES_DB: forge
+    ports: ['127.0.0.1:5432:5432']
+    volumes: [forge-postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U forge -d forge']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports: ['127.0.0.1:6379:6379']
+    volumes: [forge-redis:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  forge-postgres:
+  forge-redis:

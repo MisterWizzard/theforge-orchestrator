@@ -1,0 +1,150 @@
+Slice D4 evidence - reviewer brief with a severity scale, findings-based approval, repair scoped to blocking findings, bounded diff
+Worktree C:/forge/wt/reviewer (branch wt/reviewer) from main @ b507535, 26/09/2026 (AEST). Every model call below is a
+scripted in-process provider (the ScriptedProvider harness of packages/workflows/src/pipeline-*.test.ts); no request was
+sent to Ollama or to any cloud provider at any point.
+
+== What was true before (packages/workflows/src/index.ts @ b507535) ==
+
+:716   reviewer prompt: 'Review the actual diff against the objective and revised plan. Be evidence-based. End with a JSON
+       object {"approved":boolean,"findings":[...]}' + OBJECTIVE/PLAN/DIFF. No definition of the severities, no rule for
+       when approved should be true, no instruction to limit findings to what blocks a merge, and `${diff}` interpolated
+       raw with no size cap.
+:1056  final approval: verdict.approved === true && no finding of severity high|critical. So approved:false with only
+       low findings was not approved.
+:759   repair prompt: 'Repair every review finding. ...' followed by the whole review text, so that case spent one of
+       the three repair rounds on style. The first live run withheld approval over an import split across two lines
+       (docs/DECISIONS.md ADR-016 records the same run's reviewer working at `low`; docs/BLOCKERS.md BLK-010).
+:1067  a severity outside the scale is read as medium (unchanged).
+
+== What is true now ==
+
+buildReviewPrompt      defines the four severities, asks for diff-supported findings citing file and hunk, states that
+                       formatting/import order/whitespace are never above low, and states the approval rule. The closing
+                       verdict sentence is byte-identical to the old prompt, so parseReview's contract is unchanged.
+REVIEW_DIFF_LIMIT_BYTES = 200 * 1024. A larger diff is cut at the last line break inside the limit; the DIFF header then
+                       says how many bytes were shown and how many were not, and `git diff --stat=200 --no-ext-diff` is
+                       appended so every changed file is named. The stat is fetched once per review round.
+parseReview            approved = no high/critical finding. The reviewer's own flag is advisory: approved:false (or any
+                       non-true value) with nothing blocking gives approved:true plus approvedByPolicy:true, which the
+                       review.completed payload carries (`...verdict`). approved:true beside a high finding is still not
+                       approved. No parseable verdict still yields one synthetic high finding, never approved.
+renderRepairPrompt     numbered list of the high/critical findings only, each as "[severity] claim / Action: action", with
+                       the instruction to fix those and nothing else. Low/medium findings are not sent to the builder;
+                       they stay on review.completed, which apps/coordinator/src/server.ts:1463 already records as
+                       Findings.
+
+== Commands and results ==
+
+corepack pnpm install --frozen-lockfile        clean (simple-git-hooks cannot create .git/hooks in a worktree; harmless)
+corepack pnpm build                             Tasks: 20 successful, 20 total
+corepack pnpm --filter @theforge/workflows typecheck   clean
+corepack pnpm typecheck                         root tsc + turbo: Tasks: 20 successful, 20 total
+corepack pnpm lint                              eslint . clean
+prettier --check packages/workflows/src/index.ts packages/workflows/src/workflows.test.ts
+                 packages/workflows/src/pipeline-review.test.ts
+                                               All matched files use Prettier code style!
+                                               (docs/EXECUTION_PROTOCOL.md is in .prettierignore; this .txt has no parser)
+corepack pnpm exec vitest run packages/workflows
+                                               3 files, 41 tests passed (workflows 26, pipeline-review 3, pipeline-routing 12)
+corepack pnpm test (DATABASE_URL + REDIS_URL set to the compose services)
+                                               Test Files 41 passed (41) | Tests 387 passed | 1 skipped (388)
+                                               [vitest] schema isolation: lock held, swept 0 leftover schema(s)
+                                               The skipped test is packages/provider-ollama/src/adapter.test.ts, which
+                                               guards itself against a live Ollama; unrelated to this slice.
+                                               tests/release-acceptance.test.ts and tests/halt.integration.test.ts pass
+                                               through the rebuilt @theforge/workflows dist, so the coordinator ran the
+                                               new brief end to end with the fixture reviewer's {"approved":true,...}.
+
+== Test matrix ==
+
+parseReview (packages/workflows/src/workflows.test.ts)
+  approved:false + one low + one medium           -> approved true, approvedByPolicy true, both findings kept      PASS
+  approved:false + one high                        -> approved false, approvedByPolicy absent                       PASS
+  approved:true  + one high (pre-existing case)    -> approved false                                                PASS
+  approved:true  + no findings                     -> approved true, approvedByPolicy absent                        PASS
+  approved:false + severity "blocker" (unknown)    -> read as medium, approved true by policy                       PASS
+  no JSON object / unbalanced / invalid JSON       -> approved false, synthetic high finding, approvedByPolicy absent PASS
+  last of two verdicts wins (revised: the last one now carries a high finding, so the assertion is on the findings)  PASS
+  all other pre-existing shapes (prose before/after, fence, key order, braces in strings)                           PASS
+
+review prompts (workflows.test.ts)
+  brief carries the scale, the approval rule, the file-and-hunk instruction, and the unchanged verdict sentence;
+    diff within the limit is shown whole with no CHANGED FILES section                                              PASS
+  1200-byte diff with limitBytes 500 -> cut at byte 479 (a line boundary), "first 479 bytes shown, 721 more bytes
+    not shown", line 15 shown, line 16 absent, stat appended                                                        PASS
+  diff exactly at the limit is shown whole                                                                          PASS
+  two-byte characters: cut at 120 bytes on the line break, no U+FFFD, 122 bytes reported omitted                    PASS
+  renderRepairPrompt over [low, high, medium, critical] -> "BLOCKING FINDINGS (2)", items 1 [high] and 2 [critical]
+    with claim and action; low and medium claims absent; blockingFindings returns the same two                      PASS
+
+pipeline with scripted providers (packages/workflows/src/pipeline-review.test.ts)
+  reviewer answers approved:false with one low finding
+    -> one reviewer call, one builder call (no repair), review.completed
+       {round:1, approved:true, approvedByPolicy:true, findings:[low]}, commit made, stopped at the push gate;
+       the brief contained the scale and no truncation note                                                         PASS
+  reviewer answers approved:false with one low + one high, then approves
+    -> two reviewer calls, two builder calls; the second builder prompt is the repair brief with
+       "BLOCKING FINDINGS (1)" and item 1 [high] only (low claim absent, no item 2);
+       review.completed [{round:1, approved:false, findings:[low, high]}, {round:2, approved:true, findings:[]}];
+       commit made, stopped at the push gate                                                                        PASS
+  builder appends 3000 lines of 100 bytes to the tracked base.txt (about 300 KB of hunk)
+    -> reviewer brief header "DIFF (diff truncated: first N bytes shown, M more bytes not shown; ...)" with
+       N <= 204800 and N + M > 204800, "CHANGED FILES (git diff --stat):" naming base.txt | 3000 +, whole brief
+       under 204800 + 4096 bytes; review approved and the run reached the push gate                                 PASS
+
+== Final reviewer brief (rendered by buildReviewPrompt; placeholders in angle brackets) ==
+
+Review the actual diff against the objective and the revised plan. Be evidence-based: report only findings the diff supports, and cite the file and the hunk in every claim.
+Severity scale:
+- critical: the change is wrong, unsafe, or violates the objective.
+- high: must be fixed before merge - a real defect, a missing test for changed behaviour, or a security or data-loss risk.
+- medium: should be fixed; does not block the merge.
+- low: style, naming, formatting; never blocks.
+Formatting, import ordering, and whitespace are never above low.
+Set "approved" to true when there is no high or critical finding.
+End with a JSON object {"approved":boolean,"findings":[{"severity":"low|medium|high|critical","claim":"...","action":"..."}]}.
+OBJECTIVE:
+<objective>
+PLAN:
+<revised plan>
+DIFF:
+<git diff --no-ext-diff of the worktree>
+
+== The same brief when the diff is over the limit (rendered with limitBytes 120 on an eight-line diff) ==
+
+(identical through "PLAN:" then)
+DIFF (diff truncated: first 115 bytes shown, 117 more bytes not shown; the file list below is complete):
++line 0 xxxxxxxxxxxxxxxxxxxx
++line 1 xxxxxxxxxxxxxxxxxxxx
++line 2 xxxxxxxxxxxxxxxxxxxx
++line 3 xxxxxxxxxxxxxxxxxxxx
+CHANGED FILES (git diff --stat):
+ packages/example/src/index.ts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+== Repair brief (rendered by renderRepairPrompt over a review with low, high, medium and critical findings) ==
+
+parseReview -> approved=false approvedByPolicy=undefined
+Repair the blocking review findings listed below, and nothing else: do not act on lower-severity findings, do not restyle or reformat code the findings do not name, and do not widen the change. Add new evidence for each repair and rerun the relevant checks. Do not push.
+BLOCKING FINDINGS (2):
+1. [high] packages/x/src/a.ts hunk 2: the new branch has no test
+   Action: Add a test that exercises the new branch
+2. [critical] packages/x/src/db.ts hunk 1: migration drops user rows
+   Action: Replace the DROP with an additive migration
+
+== The advisory flag, on the shape of the first live run ==
+
+parseReview('{"approved": false, "findings": [{"severity": "low", "claim": "import split across two lines", "action": "join it"}]}')
+-> {"approved":true,"findings":[{"severity":"low","claim":"import split across two lines","action":"join it"}],"approvedByPolicy":true}
+
+== Not validated here ==
+
+No real reviewer output was produced: the GPU is running a stability benchmark and the cloud was not to be called. Whether
+Claude or Codex follow the scale as written is for the next live run to show; the review.completed payload now carries
+enough (approvedByPolicy, the findings' severities) to read that off the events.
+
+== Noticed, outside this slice ==
+
+runtime.diff (packages/git-runtime/src/index.ts:218) is `git diff --no-ext-diff`, which shows tracked changes only. A
+builder whose change is entirely new files gives the reviewer an empty DIFF (the BLK-010 transcript's "The DIFF section
+is empty" is that shape). The `git diff --stat` list added here has the same blind spot. Recorded for a follow-up.

@@ -1,0 +1,155 @@
+=== local model benchmark 2 (S7.4) 2026-09-26 09:22 ===
+
+--- header
+  ollama:         0.34.4 at http://127.0.0.1:11434
+  gpu:            NVIDIA GeForce RTX 3090, 616.92, 24576 MiB
+  date:           2026-09-26 09:22:51 +10:00
+  host:           NODEE  pwsh 7.6.6
+  cpu load:       30/8/0% over 3 samples; other agents are building/testing on this box concurrently (claude x17, Docker Desktop x5, docker-agent x1, pwsh x7).
+                  tok/s is GPU-bound and should be trustworthy; client latency and prompt_eval may be inflated by CPU contention.
+  ollama env:     OLLAMA_CONTEXT_LENGTH:0 OLLAMA_FLASH_ATTENTION:false OLLAMA_KEEP_ALIVE:5m0s OLLAMA_KV_CACHE_TYPE: OLLAMA_MAX_LOADED_MODELS:0 OLLAMA_NUM_PARALLEL:1  (from server.log startup line; process env has none set)
+  idle vram:      629 MiB (nothing loaded; subtracted from resident figures below)
+  models:         qwen3:8b, devstral-small-2:latest
+
+--- leg 2: prompt shapes (temperature 0, seed 1, think=false, server-default num_ctx)
+
+--- qwen3:8b  (tier 1)
+  cold load:      2.7s (load_duration 2.6s)
+  resident:       qwen3:8b size=9.3GB vram=9.3GB ctx=32768  nvidia-smi 9789 MiB above idle
+  [triage                ] prompt_tok=353 eval_tok=26 prompt_eval=0.07s (4,988 tok/s) eval=0.20s load=0.00s total=0.28s client=0.29s tok/s=127.1 done=stop
+                            CHECK=PASS (severity=P1 component=worker needs_reproduction=True)  sha=2C1E124DFFB91942
+  [classify              ] prompt_tok=151 eval_tok=10 prompt_eval=0.04s (4,235 tok/s) eval=0.07s load=0.00s total=0.13s client=0.13s tok/s=142.8 done=stop
+                            CHECK=PASS (work_class=single_file_edit)  sha=61E2217DDB118A25
+  [summarise             ] prompt_tok=519 eval_tok=77 prompt_eval=0.10s (5,422 tok/s) eval=0.58s load=0.00s total=0.69s client=0.70s tok/s=132.6 done=stop
+                            CHECK=PASS (55 words, mentions tier)  sha=541D45F95E436A12
+  [read_logs             ] prompt_tok=1294 eval_tok=35 prompt_eval=0.23s (5,567 tok/s) eval=0.26s load=0.00s total=0.53s client=0.54s tok/s=132.4 done=stop
+                            CHECK=PASS (2 failing tests named correctly)  sha=5B0DEAD7DD545D79
+  [commit_message        ] prompt_tok=731 eval_tok=51 prompt_eval=0.13s (5,448 tok/s) eval=0.38s load=0.00s total=0.58s client=0.58s tok/s=133.6 done=stop
+                            CHECK=PASS (subject 68 chars, 5 lines)  sha=500B002DE78FB796
+  [pr_description        ] prompt_tok=727 eval_tok=146 prompt_eval=0.13s (5,430 tok/s) eval=1.09s load=0.00s total=1.27s client=1.27s tok/s=133.4 done=stop
+                            CHECK=PASS (3 headings present, 102 words)  sha=E607A3DD355A45FD
+  [interpret_test_failure] prompt_tok=1458 eval_tok=75 prompt_eval=0.26s (5,577 tok/s) eval=0.56s load=0.00s total=0.87s client=0.87s tok/s=133.0 done=stop
+                            CHECK=PASS (2 tests, file=src/format-count.ts)  sha=6A941B34249F7EF9
+
+--- devstral-small-2:latest  (tier 2)
+  cold load:      10.6s (load_duration 10.3s)
+  resident:       devstral-small-2:latest size=18.3GB vram=18.3GB ctx=32768  nvidia-smi 19829 MiB above idle
+  [single_file_edit      ] prompt_tok=1002 eval_tok=389 prompt_eval=0.22s (4,587 tok/s) eval=7.37s load=0.00s total=7.60s client=7.60s tok/s=52.8 done=stop
+                            CHECK=PASS (all 6 required tokens present, 40 lines)  sha=7F3EDE041C3A2F51
+  [mechanical_refactor   ] prompt_tok=987 eval_tok=370 prompt_eval=0.22s (4,523 tok/s) eval=6.94s load=0.00s total=7.23s client=7.24s tok/s=53.3 done=stop
+                            CHECK=PASS (0 formatCount left, 6 describeCount, other tokens intact)  sha=4C233BDD3CEB9279
+
+--- leg 3: concurrency (identical mid-length request, num_predict 160, seed 7; nvidia-smi sampled every 1s)
+
+--- qwen3:8b
+  N=1: wall=0.23s  sum(eval)=0.22s  sum(total)=0.23s  ratio=0.92  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 0.23/0.23/0.23s  fired within 0.000s  all-started-before-first-finished=True
+        tokens=30  aggregate=127.7 tok/s  mean per-request eval=138.2 tok/s  ok=1/1  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:23:44.585 end=09:23:44.820 latency=0.23s eval_tok=30 eval=0.22s total=0.23s
+  N=4: wall=0.92s  sum(eval)=0.87s  sum(total)=2.23s  ratio=0.94  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 0.24/0.67/0.89s  fired within 0.034s  all-started-before-first-finished=True
+        tokens=120  aggregate=130.3 tok/s  mean per-request eval=138.4 tok/s  ok=4/4  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:23:44.897 end=09:23:45.133 latency=0.24s eval_tok=30 eval=0.22s total=0.23s
+        req 2: start=09:23:44.910 end=09:23:45.362 latency=0.45s eval_tok=30 eval=0.22s total=0.45s
+        req 3: start=09:23:44.921 end=09:23:45.591 latency=0.67s eval_tok=30 eval=0.22s total=0.67s
+        req 4: start=09:23:44.931 end=09:23:45.818 latency=0.89s eval_tok=30 eval=0.22s total=0.88s
+  N=8: wall=1.84s  sum(eval)=1.74s  sum(total)=7.85s  ratio=0.94  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 0.24/1.09/1.73s  fired within 0.114s  all-started-before-first-finished=True
+        tokens=240  aggregate=130.3 tok/s  mean per-request eval=137.9 tok/s  ok=8/8  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:23:45.860 end=09:23:46.098 latency=0.24s eval_tok=30 eval=0.22s total=0.23s
+        req 2: start=09:23:45.872 end=09:23:46.328 latency=0.46s eval_tok=30 eval=0.22s total=0.45s
+        req 3: start=09:23:45.883 end=09:23:46.557 latency=0.67s eval_tok=30 eval=0.22s total=0.67s
+        req 4: start=09:23:45.894 end=09:23:46.785 latency=0.89s eval_tok=30 eval=0.22s total=0.89s
+        req 5: start=09:23:45.927 end=09:23:47.014 latency=1.09s eval_tok=30 eval=0.22s total=1.08s
+        req 6: start=09:23:45.953 end=09:23:47.243 latency=1.29s eval_tok=30 eval=0.22s total=1.29s
+        req 7: start=09:23:45.965 end=09:23:47.474 latency=1.51s eval_tok=30 eval=0.22s total=1.51s
+        req 8: start=09:23:45.974 end=09:23:47.703 latency=1.73s eval_tok=30 eval=0.22s total=1.73s
+
+--- devstral-small-2:latest
+  N=1: wall=1.07s  sum(eval)=1.03s  sum(total)=1.06s  ratio=0.97  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 1.07/1.07/1.07s  fired within 0.000s  all-started-before-first-finished=True
+        tokens=55  aggregate=51.4 tok/s  mean per-request eval=53.3 tok/s  ok=1/1  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:24:03.213 end=09:24:04.282 latency=1.07s eval_tok=55 eval=1.03s total=1.06s
+  N=4: wall=4.20s  sum(eval)=4.08s  sum(total)=10.42s  ratio=0.97  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 1.08/3.12/4.14s  fired within 0.058s  all-started-before-first-finished=True
+        tokens=220  aggregate=52.3 tok/s  mean per-request eval=53.9 tok/s  ok=4/4  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:24:04.308 end=09:24:05.386 latency=1.08s eval_tok=55 eval=1.04s total=1.07s
+        req 2: start=09:24:04.321 end=09:24:06.429 latency=2.11s eval_tok=55 eval=1.01s total=2.10s
+        req 3: start=09:24:04.354 end=09:24:07.470 latency=3.12s eval_tok=55 eval=1.01s total=3.11s
+        req 4: start=09:24:04.366 end=09:24:08.510 latency=4.14s eval_tok=55 eval=1.01s total=4.14s
+  N=8: wall=8.36s  sum(eval)=8.12s  sum(total)=37.20s  ratio=0.97  -> SERIALISED (wall ~= sum of eval_duration)
+        client latency min/median/max = 1.05/5.18/8.25s  fired within 0.111s  all-started-before-first-finished=True
+        tokens=440  aggregate=52.6 tok/s  mean per-request eval=54.2 tok/s  ok=8/8  distinct outputs=1  peak vram=0 MiB (-629 above idle)  peak util=0%  samples=0
+        req 1: start=09:24:08.538 end=09:24:09.593 latency=1.05s eval_tok=55 eval=1.02s total=1.05s
+        req 2: start=09:24:08.560 end=09:24:10.638 latency=2.08s eval_tok=55 eval=1.02s total=2.07s
+        req 3: start=09:24:08.572 end=09:24:11.684 latency=3.11s eval_tok=55 eval=1.02s total=3.11s
+        req 4: start=09:24:08.582 end=09:24:12.730 latency=4.15s eval_tok=55 eval=1.02s total=4.14s
+        req 5: start=09:24:08.593 end=09:24:13.773 latency=5.18s eval_tok=55 eval=1.01s total=5.17s
+        req 6: start=09:24:08.602 end=09:24:14.816 latency=6.21s eval_tok=55 eval=1.01s total=6.21s
+        req 7: start=09:24:08.646 end=09:24:15.856 latency=7.21s eval_tok=55 eval=1.01s total=7.20s
+        req 8: start=09:24:08.649 end=09:24:16.901 latency=8.25s eval_tok=55 eval=1.02s total=8.25s
+
+--- leg 4: num_ctx sweep (ollama stop, one request with options.num_ctx, then /api/ps + nvidia-smi)
+
+--- qwen3:8b
+  num_ctx=4096   ollama ps: qwen3:8b 500a1f067a9f 5.6 GB 100% GPU 4096 4 minutes from now 
+               /api/ps size=5.20 GB vram=5.20 GB ctx=4096  nvidia-smi=5.47 GB above idle  load=4.5s  tok/s=124.5
+  num_ctx=8192   ollama ps: qwen3:8b 500a1f067a9f 6.3 GB 100% GPU 8192 4 minutes from now 
+               /api/ps size=5.86 GB vram=5.86 GB ctx=8192  nvidia-smi=6.14 GB above idle  load=2.5s  tok/s=131
+  num_ctx=16384  ollama ps: qwen3:8b 500a1f067a9f 7.5 GB 100% GPU 16384 4 minutes from now 
+               /api/ps size=7.00 GB vram=7.00 GB ctx=16384  nvidia-smi=7.28 GB above idle  load=2.5s  tok/s=130.8
+  num_ctx=32768  ollama ps: qwen3:8b 500a1f067a9f 10.0 GB 100% GPU 32768 4 minutes from now 
+               /api/ps size=9.28 GB vram=9.28 GB ctx=32768  nvidia-smi=9.56 GB above idle  load=2.7s  tok/s=129.6
+
+--- devstral-small-2:latest
+  num_ctx=4096   ollama ps: devstral-small-2:latest 24277f07f62d 14 GB 100% GPU 4096 4 minutes from now 
+               /api/ps size=13.89 GB vram=13.89 GB ctx=4096  nvidia-smi=14.96 GB above idle  load=10.6s  tok/s=53.9
+  num_ctx=8192   ollama ps: devstral-small-2:latest 24277f07f62d 15 GB 100% GPU 8192 4 minutes from now 
+               /api/ps size=14.75 GB vram=14.75 GB ctx=8192  nvidia-smi=15.82 GB above idle  load=5.0s  tok/s=53.9
+  num_ctx=16384  ollama ps: devstral-small-2:latest 24277f07f62d 16 GB 100% GPU 16384 4 minutes from now 
+               /api/ps size=15.78 GB vram=15.78 GB ctx=16384  nvidia-smi=16.85 GB above idle  load=5.0s  tok/s=54.1
+  num_ctx=32768  ollama ps: devstral-small-2:latest 24277f07f62d 19 GB 100% GPU 32768 4 minutes from now 
+               /api/ps size=18.30 GB vram=18.30 GB ctx=32768  nvidia-smi=19.36 GB above idle  load=5.5s  tok/s=53.4
+
+--- leg 4b: co-residency (load tier 1 then tier 2 back to back, no stop between)
+
+  both at num_ctx=8192
+    after qwen3:8b: qwen3:8b size=5.9GB vram=5.9GB ctx=8192  nvidia-smi 6.14 GB above idle
+    after devstral-small-2:latest: devstral-small-2:latest size=14.7GB vram=14.7GB ctx=8192  nvidia-smi 15.82 GB above idle
+    re-ask qwen3:8b: load_duration=4.31s  qwen3:8b size=5.8GB vram=5.8GB ctx=8192 | devstral-small-2:latest size=14.7GB vram=14.7GB ctx=8192  nvidia-smi 21.86 GB above idle
+    verdict: NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 4.3s)
+
+  both at num_ctx=16384
+    after qwen3:8b: qwen3:8b size=7.0GB vram=7.0GB ctx=16384  nvidia-smi 7.28 GB above idle
+    after devstral-small-2:latest: devstral-small-2:latest size=15.8GB vram=15.8GB ctx=16384  nvidia-smi 16.85 GB above idle
+    re-ask qwen3:8b: load_duration=5.58s  qwen3:8b size=7.0GB vram=7.0GB ctx=16384  nvidia-smi 7.28 GB above idle
+    verdict: NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 5.6s)
+
+  both at num_ctx=32768
+    after qwen3:8b: qwen3:8b size=9.3GB vram=9.3GB ctx=32768  nvidia-smi 9.56 GB above idle
+    after devstral-small-2:latest: devstral-small-2:latest size=18.3GB vram=18.3GB ctx=32768  nvidia-smi 19.36 GB above idle
+    re-ask qwen3:8b: load_duration=6.67s  qwen3:8b size=9.3GB vram=9.3GB ctx=32768  nvidia-smi 9.56 GB above idle
+    verdict: NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 6.7s)
+
+--- leg 5: stability legs skipped (run with -Stability for 60m per model)
+
+=== RESULT ===
+qwen3:8b                   best tok/s 142.8  (shape leg: 7/7 checks passed; per-class tok/s triage=127.1 classify=142.8 summarise=132.6 read_logs=132.4 commit_message=133.6 pr_description=133.4 interpret_test_failure=133)
+                           concurrency 1/4/8: aggregate 127.7/130.3/130.3 tok/s, wall 0.23/0.92/1.84s, max latency 0.23/0.89/1.73s, peak vram 0/0/0 MiB; N=8 SERIALISED (wall ~= sum of eval_duration)
+                           resident GB per num_ctx (ollama ps / nvidia-smi above idle): 4096=5.2/5.47  8192=5.86/6.14  16384=7/7.28  32768=9.28/9.56
+devstral-small-2:latest    best tok/s 53.3  (shape leg: 2/2 checks passed; per-class tok/s single_file_edit=52.8 mechanical_refactor=53.3)
+                           concurrency 1/4/8: aggregate 51.4/52.3/52.6 tok/s, wall 1.07/4.2/8.36s, max latency 1.07/4.14/8.25s, peak vram 0/0/0 MiB; N=8 SERIALISED (wall ~= sum of eval_duration)
+                           resident GB per num_ctx (ollama ps / nvidia-smi above idle): 4096=13.89/14.96  8192=14.75/15.82  16384=15.78/16.85  32768=18.3/19.36
+OLLAMA_NUM_PARALLEL:       requests SERIALISE: Ollama ran the burst one request at a time (server.log OLLAMA_NUM_PARALLEL:1); aggregate tok/s does not rise with N, latency grows linearly with queue depth
+co-residency @ 8192        NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 4.3s)
+co-residency @ 16384       NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 5.6s)
+co-residency @ 32768       NOT CO-RESIDENT: loading the second evicted the first (tier 1 re-ask load_duration 6.7s)
+co-residency verdict:      tier 1 and tier 2 cannot be co-resident at any tested ctx
+recommended num_ctx:       tier 1 (qwen3:8b) = 8192; tier 2 (devstral-small-2:latest) = 16384
+reasoning:                 largest tier-1 shape used 1458 prompt tokens (1533 incl. output); largest tier-2 shape used 1002 (1391 incl. output).
+                           at the recommended settings the pair costs about 6.14 + 16.85 = 23.0 GB, leaving headroom on 24 GB for KV growth and the embedding model;
+                           with num_parallel=1 there is no batching benefit to buying more context, so ctx should be sized to the largest expected prompt, not to VRAM.
+                           32768 for both would not co-reside (tier 2 alone is ~19 GB), forcing a reload on every tier switch.
+stability:                 not run (use -Stability)
+
+=== done 2026-09-26 09:26 ===

@@ -1,0 +1,316 @@
+Dependency audit evidence - F091 security and release review
+Date: 26/09/2026 (Australia/Sydney), captured on NODEE in worktree C:/forge/wt/f091
+main: b8b0ed87ad45f2c8889810586c4ee993730f4389 (merge of PR #18)
+node: v24.21.0   pnpm: 11.7.0 (packageManager pnpm@11.7.0)
+Install: corepack pnpm install --frozen-lockfile, clean.
+
+================================================================
+1. corepack pnpm audit --prod   (before any change; exit 0)
+================================================================
+No known vulnerabilities found
+
+================================================================
+2. corepack pnpm audit   (full, before any change; exit 1)
+================================================================
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ brace-expansion: DoS via unbounded expansion length    │
+│                     │ causing an out-of-memory process crash                 │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ brace-expansion                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <1.1.17                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=1.1.17                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>eslint>@eslint/config-array>minimatch>brace-         │
+│                     │ expansion                                              │
+│                     │                                                        │
+│                     │ .>eslint>@eslint/eslintrc>minimatch>brace-expansion    │
+│                     │                                                        │
+│                     │ .>eslint>minimatch>brace-expansion                     │
+│                     │                                                        │
+│                     │ ... Found 39 paths, run `pnpm why brace-expansion` for │
+│                     │ more information                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-mh99-v99m-4gvg      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ brace-expansion: DoS via unbounded expansion length    │
+│                     │ causing an out-of-memory process crash                 │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ brace-expansion                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <5.0.8                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=5.0.8                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/parser>@typescript-eslint/   │
+│                     │ typescript-estree>minimatch>brace-expansion            │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/type-utils>@typescript-      │
+│                     │ eslint/typescript-estree>minimatch>brace-expansion     │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/type-utils>@typescript-      │
+│                     │ eslint/utils>@typescript-eslint/typescript-            │
+│                     │ estree>minimatch>brace-expansion                       │
+│                     │                                                        │
+│                     │ ... Found 7 paths, run `pnpm why brace-expansion` for  │
+│                     │ more information                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-mh99-v99m-4gvg      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ brace-expansion: DoS via unbounded intermediate        │
+│                     │ arrays, bypassing the CVE-2026-14257 mitigation        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ brace-expansion                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <5.0.9                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=5.0.9                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/parser>@typescript-eslint/   │
+│                     │ typescript-estree>minimatch>brace-expansion            │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/type-utils>@typescript-      │
+│                     │ eslint/typescript-estree>minimatch>brace-expansion     │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/type-utils>@typescript-      │
+│                     │ eslint/utils>@typescript-eslint/typescript-            │
+│                     │ estree>minimatch>brace-expansion                       │
+│                     │                                                        │
+│                     │ ... Found 7 paths, run `pnpm why brace-expansion` for  │
+│                     │ more information                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-rgw5-rvv9-x895      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ brace-expansion: DoS via unbounded intermediate        │
+│                     │ arrays, bypassing the CVE-2026-14257 mitigation        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ brace-expansion                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ <1.1.18                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=1.1.18                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>eslint>@eslint/config-array>minimatch>brace-         │
+│                     │ expansion                                              │
+│                     │                                                        │
+│                     │ .>eslint>@eslint/eslintrc>minimatch>brace-expansion    │
+│                     │                                                        │
+│                     │ .>eslint>minimatch>brace-expansion                     │
+│                     │                                                        │
+│                     │ ... Found 39 paths, run `pnpm why brace-expansion` for │
+│                     │ more information                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-rgw5-rvv9-x895      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ JS-YAML: Quadratic CPU consumption in !!omap           │
+│                     │ resolution (3.x and 4.x) — CVE-2026-59870 fix not      │
+│                     │ backported                                             │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ js-yaml                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.3.1                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.3.1                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>eslint>@eslint/eslintrc>js-yaml                      │
+│                     │                                                        │
+│                     │ .>eslint-config-prettier>eslint>@eslint/eslintrc>js-   │
+│                     │ yaml                                                   │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/parser>eslint>@eslint/       │
+│                     │ eslintrc>js-yaml                                       │
+│                     │                                                        │
+│                     │ ... Found 13 paths, run `pnpm why js-yaml` for more    │
+│                     │ information                                            │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-5p4m-2wfm-xmqj      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ high                │ js-yaml: maxTotalMergeKeys does not limit CPU use for  │
+│                     │ empty merge sources                                    │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ js-yaml                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=4.0.0 <4.3.2                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.3.2                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>eslint>@eslint/eslintrc>js-yaml                      │
+│                     │                                                        │
+│                     │ .>eslint-config-prettier>eslint>@eslint/eslintrc>js-   │
+│                     │ yaml                                                   │
+│                     │                                                        │
+│                     │ .>typescript-eslint>@typescript-eslint/eslint-         │
+│                     │ plugin>@typescript-eslint/parser>eslint>@eslint/       │
+│                     │ eslintrc>js-yaml                                       │
+│                     │                                                        │
+│                     │ ... Found 13 paths, run `pnpm why js-yaml` for more    │
+│                     │ information                                            │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-2883-xcg3-v3hh      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ moderate            │ Vitest: Path Traversal / Arbitrary File Read via       │
+│                     │ @vitest/mocker Redirect Mock                           │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ vitest                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=2.1.0 <4.1.11                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.1.11                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>vitest                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-82fw-gwwq-j7x9      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ moderate            │ Vitest: Path Traversal / Arbitrary File Read via       │
+│                     │ @vitest/mocker Redirect Mock                           │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ @vitest/mocker                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=2.1.0 <4.1.11                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.1.11                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>vitest>@vitest/mocker                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-82fw-gwwq-j7x9      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ low                 │ esbuild allows arbitrary file read when running the    │
+│                     │ development server on Windows                          │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ esbuild                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=0.27.3 <0.28.1                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=0.28.1                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ apps__coordinator>tsup>bundle-require>esbuild          │
+│                     │                                                        │
+│                     │ apps__coordinator>tsup>esbuild                         │
+│                     │                                                        │
+│                     │ apps__worker>tsup>bundle-require>esbuild               │
+│                     │                                                        │
+│                     │ ... Found 38 paths, run `pnpm why esbuild` for more    │
+│                     │ information                                            │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-g7r4-m6w7-qqqr      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+9 vulnerabilities found
+Severity: 1 low | 2 moderate | 6 high
+
+================================================================
+3. Disposition of the dev-only advisories
+================================================================
+Every advisory above sits under a devDependency (eslint, typescript-eslint, eslint-config-prettier,
+vitest, tsup). None is reachable from apps/coordinator, apps/worker, apps/web or any package that ships
+in the runtime: `pnpm audit --prod` is clean. Installed versions were read from pnpm-lock.yaml.
+
+GHSA-mh99-v99m-4gvg  brace-expansion <1.1.17  (installed 1.1.16 via eslint > minimatch@3)   high, DoS
+GHSA-rgw5-rvv9-x895  brace-expansion <1.1.18  (same path)                                   high, DoS
+  -> FIXED NOW. Patch-level bump inside the 1.x line: override `brace-expansion@1: ^1.1.18` in
+     pnpm-workspace.yaml resolves to 1.1.21. Non-major; tests stay green (section 5).
+
+GHSA-mh99-v99m-4gvg  brace-expansion >=4.0.0 <5.0.8 (installed 5.0.7 via typescript-eslint > minimatch@10)
+GHSA-rgw5-rvv9-x895  brace-expansion >=4.0.0 <5.0.9 (same path)                             high, DoS
+  -> FIXED NOW. Patch-level bump inside the 5.x line: override `brace-expansion@5: ^5.0.9`
+     resolves to 5.0.12. Non-major; tests stay green.
+
+GHSA-5p4m-2wfm-xmqj  js-yaml >=4.0.0 <4.3.1  (installed 4.3.0 via eslint > @eslint/eslintrc)  high, CPU
+GHSA-2883-xcg3-v3hh  js-yaml >=4.0.0 <4.3.2  (same path)                                     high, CPU
+  -> FIXED NOW. Patch-level bump inside 4.x: override `js-yaml@4: ^4.3.2` resolves to 4.3.2.
+     (A first attempt with `>=4.3.2` pulled js-yaml 5.4.2, a major; corrected to the caret range.)
+
+GHSA-82fw-gwwq-j7x9  vitest >=2.1.0 <4.1.11 and @vitest/mocker (installed 3.2.7)           moderate, path traversal
+  -> ACCEPTED. The fix is a major bump (3.x -> 4.1.11) of the test runner, which changes the config
+     surface (globalSetup/setupFiles and the reporters this repository relies on for BLK-011 isolation)
+     and is not a non-major bump. The vulnerable code path is the browser-mode mocker redirect, which
+     `pnpm test` does not use. Re-evaluate when vitest 4 is adopted deliberately.
+
+GHSA-g7r4-m6w7-qqqr  esbuild >=0.27.3 <0.28.1  (installed 0.27.7 via tsup 8.5.1; 0.28.1 is also present
+                     as a direct dependency elsewhere in the tree)                              low, dev server
+  -> ACCEPTED. tsup 8.5.1 declares `esbuild: ^0.27.0`; forcing 0.28 crosses tsup's declared range
+     (a 0.x minor is a breaking range), and the advisory concerns esbuild's development server on
+     Windows, which nothing here runs (tsup is used to bundle only). Clears when tsup moves to 0.28.
+
+================================================================
+4. corepack pnpm audit --prod   (after the overrides; exit 0)
+================================================================
+No known vulnerabilities found
+
+================================================================
+5. corepack pnpm audit   (full, after the overrides; exit 1: the three accepted advisories remain)
+================================================================
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ moderate            │ Vitest: Path Traversal / Arbitrary File Read via       │
+│                     │ @vitest/mocker Redirect Mock                           │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ vitest                                                 │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=2.1.0 <4.1.11                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.1.11                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>vitest                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-82fw-gwwq-j7x9      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ moderate            │ Vitest: Path Traversal / Arbitrary File Read via       │
+│                     │ @vitest/mocker Redirect Mock                           │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ @vitest/mocker                                         │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=2.1.0 <4.1.11                                        │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=4.1.11                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ .>vitest>@vitest/mocker                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-82fw-gwwq-j7x9      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+┌─────────────────────┬────────────────────────────────────────────────────────┐
+│ low                 │ esbuild allows arbitrary file read when running the    │
+│                     │ development server on Windows                          │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Package             │ esbuild                                                │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Vulnerable versions │ >=0.27.3 <0.28.1                                       │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Patched versions    │ >=0.28.1                                               │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ Paths               │ apps__coordinator>tsup>bundle-require>esbuild          │
+│                     │                                                        │
+│                     │ apps__coordinator>tsup>esbuild                         │
+│                     │                                                        │
+│                     │ apps__worker>tsup>bundle-require>esbuild               │
+│                     │                                                        │
+│                     │ ... Found 38 paths, run `pnpm why esbuild` for more    │
+│                     │ information                                            │
+├─────────────────────┼────────────────────────────────────────────────────────┤
+│ More info           │ https://github.com/advisories/GHSA-g7r4-m6w7-qqqr      │
+└─────────────────────┴────────────────────────────────────────────────────────┘
+3 vulnerabilities found
+Severity: 1 low | 2 moderate
+
+================================================================
+6. Gate after the overrides
+================================================================
+See docs/RELEASE_REVIEW.md section 'Gate run for this review' for the lint, typecheck, prettier
+and full-suite results recorded against the same worktree after these overrides were applied.
+CI: the quality job keeps 'pnpm audit --prod' blocking; a non-blocking 'pnpm audit' step was
+added (.github/workflows/ci.yml) so the dev-only list is visible on every run without gating it.

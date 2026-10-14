@@ -1,0 +1,37 @@
+Evidence: ceiling behaviour observed live on NODEE, 26/09/2026 (AEST; decisions dated 27/09)
+Project: acceptance-fixture (project-1790257112080). Coordinator + worker started by hand
+from C:\forge\repos\TheForge with FORGE_DAILY_CEILING_USD overridden in the process environment.
+Provider diagnostics at start: claude available+authenticated, codex "No online worker advertises
+provider:codex" (CLI installed, not logged in), ollama available (devstral-small-2, qwen3:8b).
+
+--- Run 1: 7a98ec04, ceiling $0.00, main @ 8ff843d (before PR #21) -------------------------------
+POST /api/runs/:id/start -> 409 {"error":"spend_ceiling", "... routing to local models only"}
+events: run.created, spend.warn, spend.ceiling, run.pause, run.paused_by_guard{guard:spend}
+outbox: 20260926T061024.060Z-spend.ceiling-...json, 20260926T061024.083Z-run.paused-...json/.md
+Reading: a run cannot START on a day that is already at the ceiling (start gate; unchanged by ADR-028).
+
+--- Run 2: de39fc1c, ceiling $0.02, main @ 8ff843d, no pinned roles ------------------------------
+run.failed {"message":"Configured planner provider codex is not available"}
+Reading: on 8ff843d the contract defaulted planner/builder to codex; an unpinned run needed a
+Codex login. Fixed by ADR-024 (Claude default for every role; no zod defaults on providerRoles).
+
+--- Run 3: 00a3c994, ceiling $0.02, main @ 8ff843d, all roles pinned to claude -------------------
+routing.decided planner tier 3 "architecture routes to cloud by default"   (day $0 < ceiling)
+spend.ceiling  "estimated $0.70 would take today's total to $0.70, past the $0.02 ceiling"
+run.pause, run.paused_by_guard{role:planner, guard:spend}, run.execution_stopped{state:paused}
+usage_records: none. Reading: the projected crossing was caught by the dispatch guard, which
+pauses, instead of by the router, which would have sent the planner local. This is the gap
+ADR-028 closes (policy B3: at the ceiling switch to local-models-only).
+
+--- Run 4: cc5192de, ceiling $0.10, feat/decisions-27-09 @ bf476d7 (PR #21), no pinned roles ----
+POST /api/runs -> budget {maxUsd 5, maxTokens 100000}, configuration.providerRoles {}   (ADR-024)
+routing.decided planner  tier 2 devstral-small-2 "would route to cloud, but projected $0.70 ($0.00 spent ... + $0.70 estimated) would pass the $0.10 ceiling; routing to local models only"
+routing.decided critic   tier 2 devstral-small-2 "... projected $0.25 ..."
+routing.decided planner  tier 2 devstral-small-2 (revision after the critic)
+routing.decided builder  tier 2 model null "builder must not run locally; stopping the run at the ceiling (would route to cloud, but projected $1.25 ...)"
+run.finished -> state partially_completed, classification safety_constraint
+usage_records: ollama devstral-small-2 x3, cost 0.0000 each (148/564, 663/498, 1154/916 tokens)
+outbox: 20260926T072749.850Z-run.policy_stop-...cc5192de...json/.md
+Wall clock 17:26:51 -> 17:27:53 AEST (62 s for three local stages on the RTX 3090).
+Reading: planner and critic run locally for real under a projected crossing, the builder stops the
+run as a policy stop (not a pause), and the day's cloud spend stays $0.00. Q19 satisfied at $0.

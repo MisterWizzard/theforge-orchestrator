@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Not a workspace package. Marks tests/setup as ESM so TypeScript accepts the top-level await that isolated-schema.ts needs to finish before a test file's imports run; the root package is CommonJS-typed."
+}

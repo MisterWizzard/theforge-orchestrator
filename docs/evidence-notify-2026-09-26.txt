@@ -1,0 +1,94 @@
+Slice B2 evidence - notifier package, coordinator escalation hook, Tier 0 machine-readable outcomes
+Worktree C:/forge/wt/notify (branch wt/notify) from main @ e8f7f47, 26/09/2026 (AEST). No real Home Assistant
+or Gmail traffic was generated at any point; every network assertion runs against an in-process fake.
+
+== Commands and results ==
+
+corepack pnpm install --frozen-lockfile        clean (before adding packages/notify); afterwards `corepack pnpm install`
+                                               once, lockfile delta = the new importer entries only (packages/notify +
+                                               three workspace links), no external dependency added.
+corepack pnpm build                             Tasks: 19 successful, 19 total (was 18: @theforge/notify added)
+corepack pnpm typecheck                         Tasks: 19 successful, 19 total, plus root tsc
+corepack pnpm lint                              eslint . clean
+prettier --check <every changed file>          All matched files use Prettier code style!
+corepack pnpm test (DATABASE_URL + REDIS_URL set to the compose services)
+                                               Test Files 31 passed (31) | Tests 243 passed (243) | 0 skipped
+                                               [vitest] schema isolation: lock held, swept 0 leftover schema(s)
+                                               (9 new test files: packages/notify/src/{escalation,notifier,ha,smtp,
+                                               outbox,config}.test.ts, apps/coordinator/src/escalation.test.ts,
+                                               packages/tier0/src/{runner,report}.test.ts)
+
+== End-to-end proof of the hook ==
+
+FORGE_OUTBOX_DIR=<scratch> vitest run tests/release-acceptance.test.ts
+  The acceptance test spawns the built coordinator with NODE_ENV=production and inherits the environment.
+  It ends at a pending integration approval, i.e. a real `approval.requested` through publishEvent.
+  The coordinator process wrote, with project and task context looked up from its own maps:
+    <scratch>/20260926/20260926T002422.977Z-decision.approval-decision.approval-ef078925-....md
+    <scratch>/20260926/20260926T002422.977Z-decision.approval-decision.approval-ef078925-....json
+    <scratch>/dedupe-index.json  {"decision.approval:ef078925-...": "2026-09-26T00:24:22.963Z"}
+  The .md reads:
+    # Forge warning: Run 5cdaa59c is ready to push and needs your approval [paused]
+    WARN · 26/09/2026 10:24 AEST · run 5cdaa59c · Deterministic release fixture / Add persisted notes ...
+    PAUSED: nothing proceeds until you act.
+    ... Options 1. Approve: POST /api/approvals/<id> {"decision":"approved"} -> ... 2. Reject ... 3. Do nothing ...
+
+== Real CLI entrypoints (no .env in the worktree) ==
+
+pnpm forge help                                 lists halt, resume, status, notify-test, tier0-ingest
+pnpm forge notify-test --channel=ha             exit 2: refusing to send; ha: missing FORGE_HA_URL, FORGE_HA_TOKEN
+pnpm forge notify-test --channel=email          exit 2: refusing to send; email: missing FORGE_SMTP_USER, FORGE_SMTP_PASSWORD
+FORGE_OUTBOX_DIR=<scratch> pnpm forge notify-test
+                                                exit 0; stderr names the two skipped channels and their variables;
+                                                channels: file; result: file sent (attempt 1);
+                                                <scratch>/20260926/<ts>-notify.test-<key>.md/.json written
+pnpm tier0                                      exit 2 with usage (the new root script loads .env and runs
+                                                packages/tier0/src/cli.ts); no gh call is made without a repository
+
+== What the unit and integration tests assert (no real network) ==
+
+packages/notify/src/escalation.test.ts   rendering: subject prefix per severity, [paused] marker, section order,
+                                         DD/MM/YYYY HH:mm AEST/AEDT timestamps, optional fields absent
+packages/notify/src/notifier.test.ts     per-channel report; 3 attempts with 500/2000 ms backoff; secrets redacted from
+                                         errors and text; dedupe in memory and via the persisted index across a second
+                                         Notifier instance; window expiry at 6 h; no dedupe mark when every channel
+                                         failed; coalescing (first at once, burst held, one "N more:" summary with
+                                         worst severity when the 5 min window closes, held items deduped); close()
+                                         flushes; summarise()
+packages/notify/src/ha.test.ts           local http server: POST <base>/api/services/notify/mobile_app_phone,
+                                         Authorization: Bearer <token>, content-type json, exact body
+                                         {title, message, data:{tag, group}}; critical adds importance/priority/ttl;
+                                         3500-char truncation; HTTP 401 error text without the token; ECONNREFUSED
+packages/notify/src/smtp.test.ts         in-process fake SMTP over node:net (plaintext option): dialogue
+                                         EHLO/AUTH PLAIN/MAIL FROM/RCPT TO/DATA/QUIT; AUTH PLAIN decodes to
+                                         \0user\0password; From/To/Subject (RFC 2047 folded, decodes back)/Date
+                                         (RFC 5322)/Message-ID/Content-Type/base64 body round-trips/X-TheForge-Kind;
+                                         535 on AUTH -> error carries server text but neither the password nor its
+                                         base64; refused connection; default security implicit-tls; address injection
+                                         refused; reply parser, header encoder, dot-stuffing units
+packages/notify/src/outbox.test.ts       <dir>/<yyyymmdd local>/<ts>-<kind>-<key>.md and .json contents, Sydney day
+                                         boundary (23:39Z on the 25th lands in 20260926), collision numbering, tokens
+packages/notify/src/config.test.ts       missing-variable lists per channel, defaults, empty value = unset, outbox
+                                         resolution, channel selection
+apps/coordinator/src/escalation.test.ts  classify() for every B11 trigger and the B3 event names, null for the rest;
+                                         the hook never throws for garbage events or an exploding channel; one
+                                         recordNotification row per channel when the repository has the method,
+                                         duplicate rows, recorder failure logged, no recorder tolerated
+packages/tier0/src/runner.test.ts        fake CommandRunner: re-check precedes merge; mergedAt stamped; BEHIND ->
+                                         deferred + "@dependabot rebase" over stdin (--body-file -); CONFLICTING,
+                                         moved head, unparseable, gh failure -> deferred; HAS_HOOKS accepted; comment
+                                         gated on trustedAuthors; failed comment reported in hint; dry run never
+                                         re-checks or merges; merge-command failure escalates with a non-stale hint;
+                                         preflight and failed-check escalations carry STALE_BASE_HINT; retry once
+packages/tier0/src/report.test.ts        record shape without check output; hint/mergedAt presence; JSON round-trip;
+                                         default path <outbox>/tier0/<ts>.json; validation errors; escalation kinds
+                                         tier0.merge (info) / tier0.escalate (warn) / tier0.deferred (info), null for
+                                         skip, verify-only and a dry-run merge; dedupe key repo#number@headSha
+packages/tier0/src/policy.test.ts        hints on unmergeable, behind-base and failed-check escalations; none on the
+                                         no-checks escalation
+packages/cli/src/cli.test.ts             notify-test refusals name the variables; file channel; --channel=all skips
+                                         with reasons; HA through the injected fetch with exact URL and bearer; 401 ->
+                                         exit 1 without the token; tier0-ingest notifies once per merge/escalate/
+                                         deferred, nothing for skip and dry-run merge, duplicates on re-ingest,
+                                         exit 2 on a missing or malformed file
+tests/env-example.test.ts                still passes: every new coordinator variable is documented in .env.example

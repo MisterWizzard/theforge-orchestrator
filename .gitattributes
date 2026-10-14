@@ -1,0 +1,37 @@
+# Line-ending policy.
+#
+# Every artefact this repository produces ultimately executes inside a Linux
+# container (the worker sandbox) or on a Linux runner. A Windows checkout with
+# the default `core.autocrlf=true` rewrote LF to CRLF, which baked
+# `#!/usr/bin/env node\r` into `infra/docker/worker-sandbox/provider-entrypoint.mjs`
+# and made the built sandbox image fail at exit 127:
+#
+#   /usr/bin/env: 'node\r': No such file or directory
+#
+# Linux CI never saw this because Linux checkouts are already LF. Forcing LF on
+# checkout for all text files keeps Windows-built images identical to CI-built
+# ones. Node, TypeScript, Prettier and ESLint all handle LF on Windows.
+
+* text=auto eol=lf
+
+# Files copied into Linux images or run by a shebang MUST be LF regardless of
+# any future relaxation of the rule above.
+*.sh                                          text eol=lf
+*.mjs                                         text eol=lf
+Dockerfile                                    text eol=lf
+infra/docker/worker-sandbox/provider-entrypoint.mjs text eol=lf
+
+# Windows-native scripts, should any be added, need CRLF.
+*.bat                                         text eol=crlf
+*.cmd                                         text eol=crlf
+
+# Never touch binaries.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary

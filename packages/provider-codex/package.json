@@ -1,0 +1,25 @@
+{
+  "name": "@theforge/provider-codex",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@openai/codex": "^0.144.6",
+    "@theforge/contracts": "workspace:*",
+    "@theforge/providers": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

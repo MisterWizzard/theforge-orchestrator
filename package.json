@@ -1,0 +1,55 @@
+{
+  "name": "theforge",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "node --env-file-if-exists=.env node_modules/turbo/bin/turbo run dev --parallel",
+    "start": "node --env-file-if-exists=.env node_modules/turbo/bin/turbo run start --parallel",
+    "infra:up": "docker compose up -d --wait",
+    "sandbox:build": "docker build --tag theforge-worker-sandbox:local infra/docker/worker-sandbox",
+    "setup:local": "docker compose up -d --wait && pnpm db:migrate && pnpm sandbox:build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json && turbo run typecheck",
+    "test:prepare": "pnpm -r --filter \"./packages/**\" --filter @theforge/coordinator --filter @theforge/worker run build",
+    "test": "pnpm test:prepare && vitest run",
+    "test:watch": "pnpm test:prepare && vitest",
+    "test:acceptance": "node tests/fixtures/run-release-acceptance.mjs",
+    "test:e2e": "playwright test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx packages/db/src/migrate.ts",
+    "demo": "node --env-file-if-exists=.env --import tsx packages/workflows/src/demo.ts",
+    "forge": "node --env-file-if-exists=.env --import tsx packages/cli/src/main.ts",
+    "tier0": "node --env-file-if-exists=.env --import tsx packages/tier0/src/cli.ts",
+    "runtime:register": "pwsh -NoProfile -File scripts/runtime/register-runtime.ps1",
+    "prepare": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@theforge/db": "workspace:*",
+    "@theforge/git-runtime": "workspace:*",
+    "@theforge/testkit": "workspace:*",
+    "@theforge/workflows": "workspace:*",
+    "@eslint/js": "^9.31.0",
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^24.1.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "simple-git-hooks": "^2.11.1",
+    "tsx": "^4.20.3",
+    "turbo": "^2.5.5",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^4.1.11"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "unset GIT_DIR; pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+  }
+}

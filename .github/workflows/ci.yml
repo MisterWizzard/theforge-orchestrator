@@ -1,0 +1,120 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+# Hosted runners only. Do not route this workflow to a self-hosted runner: on a public
+# repository a pull request from a fork could run arbitrary code on it.
+#
+# The macOS leg runs on workflow_dispatch only; `quality` runs on every pull request and push to
+# main, the other jobs on pull requests and manual runs. Actions are pinned to commit SHAs; bump the SHA and the
+# trailing comment together.
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: forge, POSTGRES_PASSWORD: forge, POSTGRES_DB: forge }
+        ports: ['5432']
+        options: >-
+          --health-cmd "pg_isready -U forge -d forge"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - name: Point at the service containers
+        run: |
+          echo "DATABASE_URL=postgres://forge:forge@localhost:${{ job.services.postgres.ports['5432'] }}/forge" >> "$GITHUB_ENV"
+          echo "REDIS_URL=redis://localhost:${{ job.services.redis.ports['6379'] }}" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # apps/coordinator/src/server.test.ts starts a real pipeline run against this
+          # checkout (`repositoryUrl: process.cwd()`), which the coordinator clones into
+          # its bare cache. A depth-1 checkout clones into a cache with no refs; give the
+          # test the full history it gets on a developer machine.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: "${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm sandbox:build
+      - run: pnpm check
+      - name: Dependency audit, production dependencies (blocking)
+        run: pnpm audit --prod
+      - name: Dependency audit, all dependencies (informational; dev-only advisories are dispositioned in docs/evidence-dependency-audit-<date>.txt)
+        run: pnpm audit
+        continue-on-error: true
+  portable:
+    # Rule 2: skipped on a push to main, where the tree has just been tested on the pull
+    # request. Still runs on every pull request and on a manual dispatch.
+    if: github.event_name != 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: "${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Unit and in-memory suites only (no DATABASE_URL here, so release-acceptance, worker-loss, halt, worker-jobs and evidence suites SKIP; the quality job runs them)
+        run: pnpm test
+      - name: Built worker daemon lifecycle (test-only host executor)
+        run: pnpm exec vitest run tests/worker-portability.integration.test.ts
+  portable-macos:
+    # Rule 1: the macOS portability leg, kept but taken off the routine path. Run it from the
+    # Actions tab ("Run workflow") before a release, or whenever something touches path
+    # handling, process spawning or the worker daemon lifecycle. Deliberately a separate job
+    # rather than a conditional matrix entry: an expression that silently evaluates to the
+    # wrong list is indistinguishable from a runner that never started, which is exactly the
+    # failure this file is responding to.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Unit and in-memory suites only (no DATABASE_URL here, so release-acceptance, worker-loss, halt, worker-jobs and evidence suites SKIP; the quality job runs them)
+        run: pnpm test
+      - name: Built worker daemon lifecycle (test-only host executor)
+        run: pnpm exec vitest run tests/worker-portability.integration.test.ts
+  browser:
+    # Rule 2: skipped on a push to main, for the same reason as `portable`.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: "${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e

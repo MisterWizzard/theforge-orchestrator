@@ -1,0 +1,24 @@
+=== local model benchmark 2026-09-25 22:18 ===
+
+--- qwen3:8b
+  cold load:      5.0s
+  resident:       qwen3:8b 500a1f067a9f 10.0 GB 100% GPU 32768 4 minutes from now 
+  tokens/sec:     130  (82 tokens)
+  time to first:  0.02s
+  valid verdicts: 5/5
+
+--- devstral-small-2:latest
+  cold load:      11.8s
+  resident:       devstral-small-2:latest 24277f07f62d 19 GB 100% GPU 32768 4 minutes from now 
+  tokens/sec:     54  (94 tokens)
+  time to first:  0.04s
+  valid verdicts: 5/5
+
+--- north-mini-code-1.0:q4_K_M
+  cold load:      34.7s
+  resident:       north-mini-code-1.0:q4_K_M d8b269ad5c7c 19 GB 100% GPU 32768 4 minutes from now 
+  tokens/sec:     15.4  (96 tokens)
+  time to first:  0.23s
+  valid verdicts: 5/5
+
+=== done ===

@@ -1,0 +1,299 @@
+=== local model 60-minute stability (S7.4 / S7.3 determinism gate) 2026-09-26 ===
+
+Harness: C:\forge\tmp\bench2.ps1 -Stability (burnin.ps1 loop: one fixed prompt at temperature 0,
+SHA-256 of every response, nvidia-smi temp/power/clock/VRAM every 25 iterations, PASS only if a
+single distinct output and zero errors). Ollama 0.34.4, RTX 3090 (OC applied, ADR-017), Windows 11.
+
+Provenance: qwen3:8b ran 09:44-10:44 AEST inside the combined -Stability run. The first devstral
+leg (10:45-11:47) reached 1,550 identical outputs at 56 min and its harness process ended without a
+summary; a rerun of devstral alone (13:04) failed at iteration 1,357 when the Ollama server process
+stopped mid-request (server.log ends without a shutdown line; no agent had touched it). Ollama was
+restarted as an explicit `ollama serve` and the devstral leg was run a third time, alone, to
+completion. Two unexplained server stops in one day is recorded as an availability finding
+(THREAT_MODEL T8 residual risk); the results below are the complete legs only.
+
+--- stability: qwen3:8b, 60m, determinism at temperature 0 (burnin.ps1 loop)
+  starting 09:55:13; deadline 10:55:13
+  09:55:34  iter 25  distinct outputs: 1  temp 48C  410.11W  2010MHz  10417MiB
+  09:55:54  iter 50  distinct outputs: 1  temp 48C  411.06W  1995MHz  10417MiB
+  09:56:13  iter 75  distinct outputs: 1  temp 49C  408.42W  1995MHz  10417MiB
+  09:56:32  iter 100  distinct outputs: 1  temp 49C  406.60W  1995MHz  10417MiB
+  09:56:51  iter 125  distinct outputs: 1  temp 50C  411.94W  1995MHz  10417MiB
+  09:57:10  iter 150  distinct outputs: 1  temp 50C  402.12W  1995MHz  10417MiB
+  09:57:29  iter 175  distinct outputs: 1  temp 51C  411.89W  1995MHz  10417MiB
+  09:57:49  iter 200  distinct outputs: 1  temp 51C  410.86W  1995MHz  10417MiB
+  09:58:08  iter 225  distinct outputs: 1  temp 51C  397.10W  1995MHz  10417MiB
+  09:58:27  iter 250  distinct outputs: 1  temp 52C  410.88W  1980MHz  10417MiB
+  09:58:46  iter 275  distinct outputs: 1  temp 52C  398.01W  1980MHz  10417MiB
+  09:59:05  iter 300  distinct outputs: 1  temp 53C  410.52W  1980MHz  10417MiB
+  09:59:24  iter 325  distinct outputs: 1  temp 53C  408.90W  1980MHz  10417MiB
+  09:59:44  iter 350  distinct outputs: 1  temp 53C  407.77W  1980MHz  10417MiB
+  10:00:03  iter 375  distinct outputs: 1  temp 53C  404.33W  1980MHz  10444MiB
+  10:00:22  iter 400  distinct outputs: 1  temp 53C  405.90W  1980MHz  10417MiB
+  10:00:41  iter 425  distinct outputs: 1  temp 53C  405.71W  1980MHz  10417MiB
+  10:01:00  iter 450  distinct outputs: 1  temp 54C  418.88W  1995MHz  10417MiB
+  10:01:19  iter 475  distinct outputs: 1  temp 54C  416.51W  1995MHz  10417MiB
+  10:01:38  iter 500  distinct outputs: 1  temp 54C  417.90W  1995MHz  10417MiB
+  10:01:57  iter 525  distinct outputs: 1  temp 54C  415.60W  1995MHz  10417MiB
+  10:02:16  iter 550  distinct outputs: 1  temp 54C  416.67W  1995MHz  10417MiB
+  10:02:35  iter 575  distinct outputs: 1  temp 54C  414.76W  1995MHz  10417MiB
+  10:02:55  iter 600  distinct outputs: 1  temp 55C  417.14W  2010MHz  10417MiB
+  10:03:14  iter 625  distinct outputs: 1  temp 54C  415.27W  1995MHz  10417MiB
+  10:03:33  iter 650  distinct outputs: 1  temp 54C  416.32W  1995MHz  10417MiB
+  10:03:52  iter 675  distinct outputs: 1  temp 55C  405.64W  1995MHz  10417MiB
+  10:04:11  iter 700  distinct outputs: 1  temp 55C  405.54W  1995MHz  10417MiB
+  10:04:30  iter 725  distinct outputs: 1  temp 54C  402.83W  2010MHz  10417MiB
+  10:04:49  iter 750  distinct outputs: 1  temp 55C  416.36W  1995MHz  10417MiB
+  10:05:08  iter 775  distinct outputs: 1  temp 55C  417.23W  1995MHz  10417MiB
+  10:05:27  iter 800  distinct outputs: 1  temp 55C  413.81W  1995MHz  10417MiB
+  10:05:46  iter 825  distinct outputs: 1  temp 55C  417.22W  1995MHz  10417MiB
+  10:06:05  iter 850  distinct outputs: 1  temp 55C  410.47W  1995MHz  10417MiB
+  10:06:24  iter 875  distinct outputs: 1  temp 55C  407.74W  1995MHz  10417MiB
+  10:06:43  iter 900  distinct outputs: 1  temp 55C  411.54W  1995MHz  10417MiB
+  10:07:03  iter 925  distinct outputs: 1  temp 55C  416.58W  1995MHz  10417MiB
+  10:07:22  iter 950  distinct outputs: 1  temp 55C  416.18W  1995MHz  10417MiB
+  10:07:41  iter 975  distinct outputs: 1  temp 55C  418.59W  1995MHz  10417MiB
+  10:08:00  iter 1000  distinct outputs: 1  temp 55C  416.38W  1995MHz  10417MiB
+  10:08:19  iter 1025  distinct outputs: 1  temp 55C  415.85W  1995MHz  10417MiB
+  10:08:38  iter 1050  distinct outputs: 1  temp 55C  409.53W  2055MHz  10417MiB
+  10:08:57  iter 1075  distinct outputs: 1  temp 55C  413.13W  1995MHz  10417MiB
+  10:09:16  iter 1100  distinct outputs: 1  temp 55C  414.07W  1995MHz  10417MiB
+  10:09:36  iter 1125  distinct outputs: 1  temp 55C  415.30W  2010MHz  10417MiB
+  10:09:56  iter 1150  distinct outputs: 1  temp 55C  403.28W  2010MHz  10417MiB
+  10:10:16  iter 1175  distinct outputs: 1  temp 55C  412.19W  2025MHz  10417MiB
+  10:10:35  iter 1200  distinct outputs: 1  temp 55C  414.18W  1995MHz  10417MiB
+  10:10:54  iter 1225  distinct outputs: 1  temp 55C  414.48W  1995MHz  10417MiB
+  10:11:14  iter 1250  distinct outputs: 1  temp 55C  413.61W  1995MHz  10417MiB
+  10:11:33  iter 1275  distinct outputs: 1  temp 55C  412.74W  1995MHz  10417MiB
+  10:11:52  iter 1300  distinct outputs: 1  temp 55C  414.98W  2055MHz  10417MiB
+  10:12:11  iter 1325  distinct outputs: 1  temp 55C  413.05W  1995MHz  10417MiB
+  10:12:30  iter 1350  distinct outputs: 1  temp 55C  413.77W  1995MHz  10417MiB
+  10:12:49  iter 1375  distinct outputs: 1  temp 55C  413.98W  1995MHz  10417MiB
+  10:13:09  iter 1400  distinct outputs: 1  temp 55C  404.71W  2040MHz  10417MiB
+  10:13:28  iter 1425  distinct outputs: 1  temp 55C  412.26W  1995MHz  10417MiB
+  10:13:48  iter 1450  distinct outputs: 1  temp 55C  401.43W  2025MHz  10417MiB
+  10:14:08  iter 1475  distinct outputs: 1  temp 55C  404.55W  1995MHz  10417MiB
+  10:14:27  iter 1500  distinct outputs: 1  temp 55C  412.65W  1995MHz  10417MiB
+  10:14:47  iter 1525  distinct outputs: 1  temp 55C  410.94W  2025MHz  10417MiB
+  10:15:06  iter 1550  distinct outputs: 1  temp 55C  415.64W  1995MHz  10417MiB
+  10:15:25  iter 1575  distinct outputs: 1  temp 55C  413.41W  1995MHz  10417MiB
+  10:15:44  iter 1600  distinct outputs: 1  temp 55C  402.38W  1995MHz  10417MiB
+  10:16:04  iter 1625  distinct outputs: 1  temp 56C  413.67W  2070MHz  10417MiB
+  10:16:24  iter 1650  distinct outputs: 1  temp 55C  415.16W  2010MHz  10417MiB
+  10:16:44  iter 1675  distinct outputs: 1  temp 55C  411.16W  1995MHz  10417MiB
+  10:17:03  iter 1700  distinct outputs: 1  temp 55C  413.18W  1995MHz  10417MiB
+  10:17:22  iter 1725  distinct outputs: 1  temp 55C  415.02W  1995MHz  10417MiB
+  10:17:41  iter 1750  distinct outputs: 1  temp 55C  414.16W  1995MHz  10417MiB
+  10:18:00  iter 1775  distinct outputs: 1  temp 55C  409.20W  1995MHz  10417MiB
+  10:18:19  iter 1800  distinct outputs: 1  temp 55C  415.60W  1995MHz  10417MiB
+  10:18:39  iter 1825  distinct outputs: 1  temp 55C  415.71W  1995MHz  10417MiB
+  10:18:58  iter 1850  distinct outputs: 1  temp 55C  403.56W  1995MHz  10417MiB
+  10:19:17  iter 1875  distinct outputs: 1  temp 55C  412.56W  2010MHz  10417MiB
+  10:19:37  iter 1900  distinct outputs: 1  temp 55C  416.78W  1995MHz  10417MiB
+  10:19:56  iter 1925  distinct outputs: 1  temp 55C  400.59W  1995MHz  10417MiB
+  10:20:15  iter 1950  distinct outputs: 1  temp 55C  398.65W  2025MHz  10417MiB
+  10:20:35  iter 1975  distinct outputs: 1  temp 55C  413.07W  1995MHz  10417MiB
+  10:20:54  iter 2000  distinct outputs: 1  temp 55C  414.76W  2010MHz  10417MiB
+  10:21:14  iter 2025  distinct outputs: 1  temp 55C  411.25W  1995MHz  10417MiB
+  10:21:34  iter 2050  distinct outputs: 1  temp 55C  414.90W  1995MHz  10417MiB
+  10:21:53  iter 2075  distinct outputs: 1  temp 55C  413.55W  1995MHz  10417MiB
+  10:22:12  iter 2100  distinct outputs: 1  temp 55C  411.58W  1995MHz  10417MiB
+  10:22:32  iter 2125  distinct outputs: 1  temp 55C  413.39W  1995MHz  10417MiB
+  10:22:52  iter 2150  distinct outputs: 1  temp 55C  413.41W  2010MHz  10417MiB
+  10:23:11  iter 2175  distinct outputs: 1  temp 55C  414.68W  1995MHz  10417MiB
+  10:23:30  iter 2200  distinct outputs: 1  temp 55C  413.96W  1995MHz  10417MiB
+  10:23:49  iter 2225  distinct outputs: 1  temp 55C  414.07W  1995MHz  10417MiB
+  10:24:08  iter 2250  distinct outputs: 1  temp 55C  413.13W  1995MHz  10417MiB
+  10:24:27  iter 2275  distinct outputs: 1  temp 55C  412.97W  1995MHz  10417MiB
+  10:24:46  iter 2300  distinct outputs: 1  temp 55C  413.37W  1995MHz  10417MiB
+  10:25:05  iter 2325  distinct outputs: 1  temp 55C  413.00W  1995MHz  10417MiB
+  10:25:24  iter 2350  distinct outputs: 1  temp 55C  412.36W  1995MHz  10417MiB
+  10:25:43  iter 2375  distinct outputs: 1  temp 55C  413.41W  1995MHz  10417MiB
+  10:26:02  iter 2400  distinct outputs: 1  temp 55C  415.50W  1995MHz  10417MiB
+  10:26:21  iter 2425  distinct outputs: 1  temp 55C  402.50W  1995MHz  10417MiB
+  10:26:40  iter 2450  distinct outputs: 1  temp 55C  403.46W  1995MHz  10417MiB
+  10:27:00  iter 2475  distinct outputs: 1  temp 55C  411.28W  1995MHz  10417MiB
+  10:27:19  iter 2500  distinct outputs: 1  temp 55C  412.99W  1995MHz  10417MiB
+  10:27:38  iter 2525  distinct outputs: 1  temp 55C  412.81W  1995MHz  10417MiB
+  10:27:57  iter 2550  distinct outputs: 1  temp 55C  411.55W  1995MHz  10417MiB
+  10:28:16  iter 2575  distinct outputs: 1  temp 55C  414.22W  1995MHz  10417MiB
+  10:28:35  iter 2600  distinct outputs: 1  temp 55C  413.92W  1995MHz  10417MiB
+  10:28:54  iter 2625  distinct outputs: 1  temp 55C  413.19W  1995MHz  10417MiB
+  10:29:13  iter 2650  distinct outputs: 1  temp 55C  411.68W  1995MHz  10417MiB
+  10:29:32  iter 2675  distinct outputs: 1  temp 55C  410.19W  1995MHz  10417MiB
+  10:29:51  iter 2700  distinct outputs: 1  temp 55C  413.02W  1995MHz  10417MiB
+  10:30:10  iter 2725  distinct outputs: 1  temp 55C  414.08W  1995MHz  10417MiB
+  10:30:29  iter 2750  distinct outputs: 1  temp 55C  415.16W  1995MHz  10417MiB
+  10:30:48  iter 2775  distinct outputs: 1  temp 55C  414.04W  1995MHz  10417MiB
+  10:31:07  iter 2800  distinct outputs: 1  temp 55C  411.58W  1995MHz  10417MiB
+  10:31:26  iter 2825  distinct outputs: 1  temp 55C  404.12W  1995MHz  10417MiB
+  10:31:45  iter 2850  distinct outputs: 1  temp 55C  403.90W  1995MHz  10417MiB
+  10:32:04  iter 2875  distinct outputs: 1  temp 55C  403.39W  1995MHz  10417MiB
+  10:32:23  iter 2900  distinct outputs: 1  temp 55C  402.54W  1995MHz  10417MiB
+  10:32:42  iter 2925  distinct outputs: 1  temp 55C  412.61W  2055MHz  10417MiB
+  10:33:01  iter 2950  distinct outputs: 1  temp 55C  413.40W  1995MHz  10417MiB
+  10:33:20  iter 2975  distinct outputs: 1  temp 55C  413.95W  1995MHz  10417MiB
+  10:33:39  iter 3000  distinct outputs: 1  temp 55C  413.95W  1995MHz  10417MiB
+  10:33:58  iter 3025  distinct outputs: 1  temp 55C  412.70W  1995MHz  10417MiB
+  10:34:17  iter 3050  distinct outputs: 1  temp 55C  413.67W  1995MHz  10417MiB
+  10:34:36  iter 3075  distinct outputs: 1  temp 55C  414.36W  1995MHz  10417MiB
+  10:34:55  iter 3100  distinct outputs: 1  temp 55C  412.96W  1995MHz  10417MiB
+  10:35:14  iter 3125  distinct outputs: 1  temp 55C  414.68W  1995MHz  10417MiB
+  10:35:33  iter 3150  distinct outputs: 1  temp 55C  415.15W  1995MHz  10417MiB
+  10:35:52  iter 3175  distinct outputs: 1  temp 55C  413.22W  1995MHz  10417MiB
+  10:36:11  iter 3200  distinct outputs: 1  temp 55C  414.08W  1995MHz  10417MiB
+  10:36:30  iter 3225  distinct outputs: 1  temp 55C  413.27W  1995MHz  10417MiB
+  10:36:49  iter 3250  distinct outputs: 1  temp 55C  413.16W  1995MHz  10417MiB
+  10:37:08  iter 3275  distinct outputs: 1  temp 55C  414.99W  1995MHz  10417MiB
+  10:37:27  iter 3300  distinct outputs: 1  temp 55C  408.69W  1995MHz  10417MiB
+  10:37:46  iter 3325  distinct outputs: 1  temp 55C  403.24W  1995MHz  10417MiB
+  10:38:05  iter 3350  distinct outputs: 1  temp 55C  403.14W  1995MHz  10417MiB
+  10:38:24  iter 3375  distinct outputs: 1  temp 55C  410.84W  1995MHz  10417MiB
+  10:38:44  iter 3400  distinct outputs: 1  temp 55C  404.67W  1995MHz  10417MiB
+  10:39:03  iter 3425  distinct outputs: 1  temp 55C  405.01W  1995MHz  10417MiB
+  10:39:22  iter 3450  distinct outputs: 1  temp 55C  402.37W  1995MHz  10417MiB
+  10:39:41  iter 3475  distinct outputs: 1  temp 55C  413.91W  1995MHz  10417MiB
+  10:40:00  iter 3500  distinct outputs: 1  temp 55C  412.95W  1995MHz  10417MiB
+  10:40:19  iter 3525  distinct outputs: 1  temp 56C  414.56W  1995MHz  10417MiB
+  10:40:38  iter 3550  distinct outputs: 1  temp 55C  412.91W  1995MHz  10417MiB
+  10:40:57  iter 3575  distinct outputs: 1  temp 56C  413.70W  1995MHz  10417MiB
+  10:41:16  iter 3600  distinct outputs: 1  temp 56C  416.56W  1995MHz  10417MiB
+  10:41:35  iter 3625  distinct outputs: 1  temp 55C  411.38W  1995MHz  10417MiB
+  10:41:54  iter 3650  distinct outputs: 1  temp 55C  412.77W  1995MHz  10417MiB
+  10:42:13  iter 3675  distinct outputs: 1  temp 55C  413.95W  1995MHz  10417MiB
+  10:42:32  iter 3700  distinct outputs: 1  temp 55C  413.99W  1995MHz  10417MiB
+  10:42:51  iter 3725  distinct outputs: 1  temp 55C  413.47W  1995MHz  10417MiB
+  10:43:10  iter 3750  distinct outputs: 1  temp 55C  413.95W  1995MHz  10417MiB
+  10:43:29  iter 3775  distinct outputs: 1  temp 55C  413.22W  1995MHz  10417MiB
+  10:43:48  iter 3800  distinct outputs: 1  temp 55C  415.25W  1995MHz  10417MiB
+  10:44:07  iter 3825  distinct outputs: 1  temp 55C  413.36W  1995MHz  10417MiB
+  10:44:26  iter 3850  distinct outputs: 1  temp 55C  415.26W  1995MHz  10417MiB
+  10:44:45  iter 3875  distinct outputs: 1  temp 55C  413.74W  1995MHz  10417MiB
+  10:45:04  iter 3900  distinct outputs: 1  temp 55C  410.88W  1995MHz  10417MiB
+  10:45:23  iter 3925  distinct outputs: 1  temp 55C  402.71W  1995MHz  10417MiB
+  10:45:42  iter 3950  distinct outputs: 1  temp 55C  402.08W  2010MHz  10417MiB
+  10:46:01  iter 3975  distinct outputs: 1  temp 55C  402.75W  1995MHz  10417MiB
+  10:46:20  iter 4000  distinct outputs: 1  temp 55C  403.14W  1995MHz  10417MiB
+  10:46:39  iter 4025  distinct outputs: 1  temp 55C  405.67W  1995MHz  10417MiB
+  10:46:58  iter 4050  distinct outputs: 1  temp 55C  412.68W  2040MHz  10417MiB
+  10:47:17  iter 4075  distinct outputs: 1  temp 55C  409.93W  1995MHz  10417MiB
+  10:47:36  iter 4100  distinct outputs: 1  temp 55C  414.40W  1995MHz  10417MiB
+  10:47:55  iter 4125  distinct outputs: 1  temp 56C  415.56W  1995MHz  10417MiB
+  10:48:14  iter 4150  distinct outputs: 1  temp 56C  415.90W  1995MHz  10417MiB
+  10:48:33  iter 4175  distinct outputs: 1  temp 55C  413.83W  1995MHz  10417MiB
+  10:48:52  iter 4200  distinct outputs: 1  temp 55C  412.88W  1995MHz  10417MiB
+  10:49:11  iter 4225  distinct outputs: 1  temp 55C  413.90W  1995MHz  10417MiB
+  10:49:30  iter 4250  distinct outputs: 1  temp 55C  413.21W  1995MHz  10417MiB
+  10:49:49  iter 4275  distinct outputs: 1  temp 55C  413.29W  1995MHz  10417MiB
+  10:50:08  iter 4300  distinct outputs: 1  temp 55C  415.45W  1995MHz  10417MiB
+  10:50:27  iter 4325  distinct outputs: 1  temp 55C  414.60W  1995MHz  10417MiB
+  10:50:46  iter 4350  distinct outputs: 1  temp 55C  414.02W  1995MHz  10417MiB
+  10:51:05  iter 4375  distinct outputs: 1  temp 55C  403.64W  1995MHz  10417MiB
+  10:51:24  iter 4400  distinct outputs: 1  temp 55C  413.08W  1995MHz  10417MiB
+  10:51:44  iter 4425  distinct outputs: 1  temp 55C  411.80W  1995MHz  10417MiB
+  10:52:03  iter 4450  distinct outputs: 1  temp 55C  395.98W  1995MHz  10417MiB
+  10:52:22  iter 4475  distinct outputs: 1  temp 55C  403.13W  1995MHz  10417MiB
+  10:52:41  iter 4500  distinct outputs: 1  temp 55C  403.35W  1995MHz  10417MiB
+  10:53:00  iter 4525  distinct outputs: 1  temp 55C  412.88W  2055MHz  10417MiB
+  10:53:19  iter 4550  distinct outputs: 1  temp 55C  413.27W  1995MHz  10417MiB
+  10:53:38  iter 4575  distinct outputs: 1  temp 55C  413.57W  1995MHz  10417MiB
+  10:53:57  iter 4600  distinct outputs: 1  temp 55C  413.47W  1995MHz  10417MiB
+  10:54:16  iter 4625  distinct outputs: 1  temp 55C  412.84W  1995MHz  10417MiB
+  10:54:35  iter 4650  distinct outputs: 1  temp 55C  413.49W  1995MHz  10417MiB
+  10:54:54  iter 4675  distinct outputs: 1  temp 56C  414.35W  1995MHz  10417MiB
+  10:55:13  iter 4700  distinct outputs: 1  temp 56C  413.07W  1995MHz  10417MiB
+  === STABILITY RESULT: qwen3:8b ===
+  iterations:        4700 in 60 min  (127.9 tok/s sustained incl. client overhead)
+  api errors:        0
+  DISTINCT OUTPUTS:  1   <-- must be exactly 1
+  temp   min/max:    41 / 56 C
+  power  min/max:    238 / 420 W
+  sm clk min/max:    1980 / 2100 MHz
+  vram   min/max:    10417 / 10444 MiB
+  active slowdowns:   SW Power Cap : Active 
+  VERDICT: PASS - output identical across all 4700 runs.
+
+--- stability: devstral-small-2:latest, 60m, determinism at temperature 0 (burnin.ps1 loop)
+  starting 13:05:14; deadline 14:05:14
+  13:06:09  iter 25  distinct outputs: 1  temp 53C  416.32W  1920MHz  20479MiB
+  13:06:58  iter 50  distinct outputs: 1  temp 54C  415.93W  1950MHz  20479MiB
+  13:07:47  iter 75  distinct outputs: 1  temp 55C  415.86W  1920MHz  20479MiB
+  13:08:37  iter 100  distinct outputs: 1  temp 55C  416.96W  1950MHz  20479MiB
+  13:09:26  iter 125  distinct outputs: 1  temp 56C  416.56W  1950MHz  20479MiB
+  13:10:15  iter 150  distinct outputs: 1  temp 56C  416.60W  1950MHz  20479MiB
+  13:11:05  iter 175  distinct outputs: 1  temp 56C  415.83W  1950MHz  20479MiB
+  13:11:54  iter 200  distinct outputs: 1  temp 56C  416.85W  1950MHz  20479MiB
+  13:12:43  iter 225  distinct outputs: 1  temp 56C  416.67W  1935MHz  20479MiB
+  13:13:33  iter 250  distinct outputs: 1  temp 56C  416.44W  1950MHz  20479MiB
+  13:14:22  iter 275  distinct outputs: 1  temp 57C  418.35W  1905MHz  20479MiB
+  13:15:11  iter 300  distinct outputs: 1  temp 57C  415.60W  1935MHz  20479MiB
+  13:16:01  iter 325  distinct outputs: 1  temp 57C  415.74W  1950MHz  20479MiB
+  13:16:51  iter 350  distinct outputs: 1  temp 57C  415.37W  1920MHz  20479MiB
+  13:17:40  iter 375  distinct outputs: 1  temp 57C  415.39W  1950MHz  20479MiB
+  13:18:30  iter 400  distinct outputs: 1  temp 57C  416.31W  1950MHz  20479MiB
+  13:19:20  iter 425  distinct outputs: 1  temp 57C  416.73W  1920MHz  20479MiB
+  13:20:09  iter 450  distinct outputs: 1  temp 57C  414.37W  1920MHz  20479MiB
+  13:20:58  iter 475  distinct outputs: 1  temp 56C  415.64W  1935MHz  20479MiB
+  13:21:48  iter 500  distinct outputs: 1  temp 57C  416.83W  1920MHz  20479MiB
+  13:22:38  iter 525  distinct outputs: 1  temp 57C  416.00W  1935MHz  20479MiB
+  13:23:28  iter 550  distinct outputs: 1  temp 57C  416.87W  1935MHz  20479MiB
+  13:24:19  iter 575  distinct outputs: 1  temp 57C  414.63W  1905MHz  20479MiB
+  13:25:09  iter 600  distinct outputs: 1  temp 57C  416.67W  1950MHz  20479MiB
+  13:25:59  iter 625  distinct outputs: 1  temp 57C  415.97W  1935MHz  20479MiB
+  13:26:49  iter 650  distinct outputs: 1  temp 57C  415.86W  1995MHz  20479MiB
+  13:27:38  iter 675  distinct outputs: 1  temp 57C  416.95W  1950MHz  20479MiB
+  13:28:28  iter 700  distinct outputs: 1  temp 57C  416.76W  1950MHz  20479MiB
+  13:29:17  iter 725  distinct outputs: 1  temp 57C  415.45W  1935MHz  20479MiB
+  13:30:07  iter 750  distinct outputs: 1  temp 57C  417.24W  1950MHz  20479MiB
+  13:30:56  iter 775  distinct outputs: 1  temp 56C  415.97W  1980MHz  20479MiB
+  13:31:45  iter 800  distinct outputs: 1  temp 57C  415.69W  1935MHz  20479MiB
+  13:32:35  iter 825  distinct outputs: 1  temp 57C  415.89W  1905MHz  20479MiB
+  13:33:24  iter 850  distinct outputs: 1  temp 57C  416.46W  1950MHz  20479MiB
+  13:34:13  iter 875  distinct outputs: 1  temp 57C  416.04W  1950MHz  20479MiB
+  13:35:03  iter 900  distinct outputs: 1  temp 57C  415.87W  2010MHz  20479MiB
+  13:35:52  iter 925  distinct outputs: 1  temp 57C  416.95W  1950MHz  20479MiB
+  13:36:41  iter 950  distinct outputs: 1  temp 57C  415.88W  1920MHz  20479MiB
+  13:37:30  iter 975  distinct outputs: 1  temp 57C  415.54W  1935MHz  20479MiB
+  13:38:20  iter 1000  distinct outputs: 1  temp 57C  417.20W  1935MHz  20479MiB
+  13:39:09  iter 1025  distinct outputs: 1  temp 56C  415.12W  1995MHz  20479MiB
+  13:39:59  iter 1050  distinct outputs: 1  temp 57C  414.49W  1905MHz  20479MiB
+  13:40:50  iter 1075  distinct outputs: 1  temp 57C  415.66W  1935MHz  20479MiB
+  13:41:40  iter 1100  distinct outputs: 1  temp 57C  416.41W  1875MHz  20479MiB
+  13:42:30  iter 1125  distinct outputs: 1  temp 57C  417.21W  1950MHz  20479MiB
+  13:43:19  iter 1150  distinct outputs: 1  temp 57C  417.08W  1950MHz  20479MiB
+  13:44:08  iter 1175  distinct outputs: 1  temp 57C  414.35W  1890MHz  20479MiB
+  13:44:57  iter 1200  distinct outputs: 1  temp 57C  416.75W  1935MHz  20479MiB
+  13:45:47  iter 1225  distinct outputs: 1  temp 57C  414.69W  1950MHz  20479MiB
+  13:46:38  iter 1250  distinct outputs: 1  temp 57C  415.56W  1935MHz  20479MiB
+  13:47:27  iter 1275  distinct outputs: 1  temp 57C  415.74W  1935MHz  20479MiB
+  13:48:17  iter 1300  distinct outputs: 1  temp 57C  416.57W  1950MHz  20479MiB
+  13:49:08  iter 1325  distinct outputs: 1  temp 57C  415.15W  1890MHz  20479MiB
+  13:49:57  iter 1350  distinct outputs: 1  temp 57C  416.14W  1950MHz  20479MiB
+  13:50:46  iter 1375  distinct outputs: 1  temp 57C  415.34W  1935MHz  20479MiB
+  13:51:36  iter 1400  distinct outputs: 1  temp 57C  415.05W  1950MHz  20479MiB
+  13:52:25  iter 1425  distinct outputs: 1  temp 57C  417.61W  1935MHz  20479MiB
+  13:53:14  iter 1450  distinct outputs: 1  temp 57C  415.27W  1935MHz  20479MiB
+  13:54:04  iter 1475  distinct outputs: 1  temp 57C  417.31W  1905MHz  20479MiB
+  13:54:53  iter 1500  distinct outputs: 1  temp 57C  416.08W  1950MHz  20479MiB
+  13:55:42  iter 1525  distinct outputs: 1  temp 57C  415.80W  1950MHz  20479MiB
+  13:56:32  iter 1550  distinct outputs: 1  temp 57C  415.65W  2025MHz  20479MiB
+  13:57:21  iter 1575  distinct outputs: 1  temp 57C  417.30W  1950MHz  20479MiB
+  13:58:10  iter 1600  distinct outputs: 1  temp 57C  416.56W  1935MHz  20479MiB
+  13:59:00  iter 1625  distinct outputs: 1  temp 57C  415.14W  1890MHz  20479MiB
+  13:59:50  iter 1650  distinct outputs: 1  temp 57C  416.48W  1950MHz  20479MiB
+  14:00:40  iter 1675  distinct outputs: 1  temp 57C  415.05W  1950MHz  20479MiB
+  14:01:30  iter 1700  distinct outputs: 1  temp 57C  416.97W  1935MHz  20479MiB
+  14:02:19  iter 1725  distinct outputs: 1  temp 57C  415.46W  1890MHz  20479MiB
+  14:03:09  iter 1750  distinct outputs: 1  temp 57C  415.40W  1935MHz  20479MiB
+  14:03:58  iter 1775  distinct outputs: 1  temp 57C  416.87W  1935MHz  20479MiB
+  14:04:47  iter 1800  distinct outputs: 1  temp 57C  416.49W  1935MHz  20479MiB
+  === STABILITY RESULT: devstral-small-2:latest ===
+  iterations:        1814 in 60 min  (51.9 tok/s sustained incl. client overhead)
+  api errors:        0
+  DISTINCT OUTPUTS:  1   <-- must be exactly 1
+  temp   min/max:    51 / 57 C
+  power  min/max:    404 / 418 W
+  sm clk min/max:    1875 / 2040 MHz
+  vram   min/max:    20479 / 20506 MiB
+  active slowdowns:   SW Power Cap : Active 
+  VERDICT: PASS - output identical across all 1814 runs.

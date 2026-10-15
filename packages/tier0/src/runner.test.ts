@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG, type PullRequestFacts } from './policy.js';
 import { listCandidates, lookupMergeSha, verifyPullRequest, type CommandRunner } from './runner.js';
 
 const pr = (overrides: Partial<PullRequestFacts> = {}): PullRequestFacts => ({
-  repository: 'MisterWizzard/shopfront',
+  repository: 'example-org/shopfront',
   number: 26,
   author: 'dependabot[bot]',
   title: 'chore(deps): bump nanoid from 3.3.11 to 3.3.18',
@@ -75,7 +75,7 @@ describe('verifyPullRequest merge path', () => {
   it('re-checks mergeability right before merging, then merges and stamps mergedAt', async () => {
     const fake = fakeExec({ view: clean });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
       now: () => Date.parse('2026-09-26T01:00:00Z'),
@@ -94,7 +94,7 @@ describe('verifyPullRequest merge path', () => {
       'view',
       '26',
       '-R',
-      'MisterWizzard/shopfront',
+      'example-org/shopfront',
       '--json',
       'mergeable,mergeStateStatus,headRefOid',
     ]);
@@ -103,7 +103,7 @@ describe('verifyPullRequest merge path', () => {
       'merge',
       '26',
       '-R',
-      'MisterWizzard/shopfront',
+      'example-org/shopfront',
       '--squash',
       '--delete-branch',
     ]);
@@ -112,7 +112,7 @@ describe('verifyPullRequest merge path', () => {
       'view',
       '26',
       '-R',
-      'MisterWizzard/shopfront',
+      'example-org/shopfront',
       '--json',
       'mergeCommit',
     ]);
@@ -127,7 +127,7 @@ describe('verifyPullRequest merge path', () => {
     ]) {
       const fake = fakeExec({ view: clean, mergeCommit });
       const outcome = await verifyPullRequest(pr(), {
-        repository: 'MisterWizzard/shopfront',
+        repository: 'example-org/shopfront',
         execute: true,
         exec: fake.exec,
         now: () => Date.parse('2026-09-26T01:00:00Z'),
@@ -141,7 +141,7 @@ describe('verifyPullRequest merge path', () => {
   it('exposes the merge commit lookup for outcome files that predate it', async () => {
     const fake = fakeExec({});
     expect(
-      await lookupMergeSha({ repository: 'MisterWizzard/shopfront', number: 26 }, fake.exec),
+      await lookupMergeSha({ repository: 'example-org/shopfront', number: 26 }, fake.exec),
     ).toBe(MERGE_SHA);
     expect(fake.gh()).toEqual(['pr view 26']);
   });
@@ -157,7 +157,7 @@ describe('verifyPullRequest merge path', () => {
       },
     });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
     });
@@ -176,7 +176,7 @@ describe('verifyPullRequest merge path', () => {
       'comment',
       '26',
       '-R',
-      'MisterWizzard/shopfront',
+      'example-org/shopfront',
       '--body-file',
       '-',
     ]);
@@ -217,7 +217,7 @@ describe('verifyPullRequest merge path', () => {
     for (const [label, view, reason] of cases) {
       const fake = fakeExec({ view });
       const outcome = await verifyPullRequest(pr(), {
-        repository: 'MisterWizzard/shopfront',
+        repository: 'example-org/shopfront',
         execute: true,
         exec: fake.exec,
       });
@@ -239,7 +239,7 @@ describe('verifyPullRequest merge path', () => {
       },
     });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
     });
@@ -257,7 +257,7 @@ describe('verifyPullRequest merge path', () => {
       },
     });
     const outcome = await verifyPullRequest(pr({ author: 'renovate[bot]' }), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
       config: { ...DEFAULT_CONFIG, trustedAuthors: ['renovate[bot]'] },
@@ -278,7 +278,7 @@ describe('verifyPullRequest merge path', () => {
       comment: 1,
     });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
     });
@@ -291,18 +291,18 @@ describe('verifyPullRequest merge path', () => {
   it('never re-checks or merges in a dry run', async () => {
     const fake = fakeExec({ view: clean });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       exec: fake.exec,
     });
     expect(outcome.decision.action).toBe('merge');
     expect(outcome.merged).toBe(false);
-    expect(fake.gh()).toEqual(['repo clone MisterWizzard/shopfront']);
+    expect(fake.gh()).toEqual(['repo clone example-org/shopfront']);
   });
 
   it('escalates with a non-stale hint when the merge command itself fails', async () => {
     const fake = fakeExec({ view: clean, merge: 1 });
     const outcome = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       execute: true,
       exec: fake.exec,
     });
@@ -316,7 +316,7 @@ describe('verifyPullRequest merge path', () => {
 
   it('carries the stale-base hint on a preflight escalation and on failed checks after the retry', async () => {
     const behind = await verifyPullRequest(pr({ behindBase: true }), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       exec: fakeExec({}).exec,
     });
     expect(behind.decision.action).toBe('escalate');
@@ -325,7 +325,7 @@ describe('verifyPullRequest merge path', () => {
 
     const fake = fakeExec({ checks: { lint: 1 } });
     const failed = await verifyPullRequest(pr(), {
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       exec: fake.exec,
     });
     expect(failed.decision.action).toBe('escalate');
@@ -357,9 +357,9 @@ describe('listCandidates', () => {
       }
       return fake.exec(command, args, cwd, stdin);
     };
-    expect(await listCandidates('MisterWizzard/shopfront', 5, exec)).toEqual([
+    expect(await listCandidates('example-org/shopfront', 5, exec)).toEqual([
       {
-        repository: 'MisterWizzard/shopfront',
+        repository: 'example-org/shopfront',
         number: 3,
         author: 'dependabot[bot]',
         title: 't',

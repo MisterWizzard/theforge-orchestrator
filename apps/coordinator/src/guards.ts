@@ -51,14 +51,13 @@ import {
 export { DEFAULT_ROLE_ESTIMATE_USD, ROLE_ESTIMATES_USD };
 
 /**
- * Providers whose adapter reports no marginal cost. Codex and the Claude
- * subscription lane (`claude-sub`, ADR-041) run on a subscription and record
- * `usd: 0` for every call (carried as F111), so the ceiling cannot see them.
- * Such calls are still refused once the day is over the ceiling - policy B3
- * routes to *local* models then, and a subscription is not local - but they
- * never move the total.
+ * Providers whose adapter reports no marginal cost. Codex runs on a
+ * subscription and `packages/provider-codex/src/index.ts` records `usd: 0`
+ * for every call (carried as F111), so the ceiling cannot see it. Such calls
+ * are still refused once the day is over the ceiling - policy B3 routes to
+ * *local* models then, and Codex is not local - but they never move the total.
  */
-export const UNMETERED_PROVIDERS: ReadonlySet<string> = new Set(['codex', 'claude-sub']);
+export const UNMETERED_PROVIDERS: ReadonlySet<string> = new Set(['codex']);
 
 /**
  * Providers that run on the worker host against a local model server (ADR-021).

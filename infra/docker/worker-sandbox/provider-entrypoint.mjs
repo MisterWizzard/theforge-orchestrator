@@ -30,8 +30,9 @@ if (envelope.kind === 'api-key') {
   childEnvironment[provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY'] =
     secret.toString('utf8');
 } else {
-  const directory = provider === 'claude' ? '/home/node/.claude' : '/home/node/.codex';
-  const path = `${directory}/${provider === 'claude' ? '.credentials.json' : 'auth.json'}`;
+  if (provider !== 'codex') throw new Error('Only the Codex CLI takes an auth file');
+  const directory = '/home/node/.codex';
+  const path = `${directory}/auth.json`;
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await writeFile(path, secret, { mode: 0o600 });
 }

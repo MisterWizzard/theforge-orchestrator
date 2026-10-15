@@ -111,7 +111,6 @@ describe('.env.example', () => {
     for (const credential of [
       'ANTHROPIC_API_KEY',
       'OPENAI_API_KEY',
-      'FORGE_CLAUDE_CREDENTIALS_FILE',
       'FORGE_CODEX_AUTH_FILE',
     ] as const) {
       expect(worker[credential], credential).toBeUndefined();
@@ -123,14 +122,14 @@ describe('.env.example', () => {
       ...(await completedExample()),
       GITHUB_TOKEN: '',
       ANTHROPIC_API_KEY: '',
-      FORGE_CLAUDE_CREDENTIALS_FILE: '',
+      FORGE_CODEX_AUTH_FILE: '',
       PORT: '',
     };
     expect(loaders.coordinator(source).GITHUB_TOKEN).toBeUndefined();
     expect(loaders.coordinator(source).PORT).toBe(4400);
     const worker = loaders.worker(source);
     expect(worker.ANTHROPIC_API_KEY).toBeUndefined();
-    expect(worker.FORGE_CLAUDE_CREDENTIALS_FILE).toBeUndefined();
+    expect(worker.FORGE_CODEX_AUTH_FILE).toBeUndefined();
   });
 
   it('names the variable and a remedy when FORGE_WORKER_TOKEN is missing', async () => {

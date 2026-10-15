@@ -38,7 +38,8 @@ export type BudgetConfig = {
   maxDailyUsd: number;
   /**
    * Usage records created before this ISO timestamp are not counted against the
-   * allowance. Usage that was never billed to the allowance is not counted, and counting it would understate what is left.
+   * allowance. Spend that was never billed to the allowance is not counted,
+   * and counting it would understate what is left.
    */
   countFrom?: string;
 };

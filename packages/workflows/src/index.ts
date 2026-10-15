@@ -373,7 +373,7 @@ function safeEqual(a: string, b: string) {
  * `@theforge/contracts`: the run-configuration enum there gains 'ollama' with
  * the provider slice, and this union accepts whichever value it produces.
  */
-export type PipelineProviderId = 'claude' | 'claude-sub' | 'codex' | 'ollama';
+export type PipelineProviderId = 'claude' | 'codex' | 'ollama';
 
 export type AutonomousPipelineInput = {
   run: Run;

@@ -15,7 +15,7 @@ import type { PullRequestOutcome } from './runner.js';
 
 const outcome = (overrides: Partial<PullRequestOutcome> = {}): PullRequestOutcome => ({
   pullRequest: {
-    repository: 'MisterWizzard/shopfront',
+    repository: 'example-org/shopfront',
     number: 26,
     author: 'dependabot[bot]',
     title: 'chore(deps): bump nanoid from 3.3.11 to 3.3.18',
@@ -58,7 +58,7 @@ describe('Tier 0 outcome records', () => {
   it('flattens an outcome and drops check output', () => {
     const record = toOutcomeRecord(merged(), 'execute', 'e8f7f47deadbeef');
     expect(record).toEqual({
-      repository: 'MisterWizzard/shopfront',
+      repository: 'example-org/shopfront',
       number: 26,
       title: 'chore(deps): bump nanoid from 3.3.11 to 3.3.18',
       author: 'dependabot[bot]',
@@ -155,16 +155,16 @@ describe('escalationFromOutcomeRecord', () => {
       kind: 'tier0.merge',
       severity: 'info',
       paused: false,
-      project: 'MisterWizzard/shopfront',
+      project: 'example-org/shopfront',
       task: 'PR #26: chore(deps): bump nanoid from 3.3.11 to 3.3.18',
       occurredAt: '2026-09-26T01:00:00.000Z',
-      dedupeKey: 'tier0:merge:MisterWizzard/shopfront#26@abcdef1234567890abcdef1234567890abcdef12',
+      dedupeKey: 'tier0:merge:example-org/shopfront#26@abcdef1234567890abcdef1234567890abcdef12',
     });
     expect(escalation?.title).toBe(
-      'Tier 0 merged MisterWizzard/shopfront#26: chore(deps): bump nanoid from 3.3.11 to 3.3.18',
+      'Tier 0 merged example-org/shopfront#26: chore(deps): bump nanoid from 3.3.11 to 3.3.18',
     );
     expect(escalation?.evidence).toEqual([
-      'MisterWizzard/shopfront#26 at abcdef1234567890abcdef1234567890abcdef12',
+      'example-org/shopfront#26 at abcdef1234567890abcdef1234567890abcdef12',
       `merged as ${MERGE_SHA}`,
       'checks: install exit 0, test exit 0',
       'attempts 1, 62 s, Tier 0 at e8f7f47d',

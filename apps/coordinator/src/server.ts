@@ -319,7 +319,6 @@ class WorkerProviderAdapter implements ProviderAdapter {
 }
 const workerProviders: ProviderAdapter[] = [
   new WorkerProviderAdapter('claude'),
-  new WorkerProviderAdapter('claude-sub'),
   new WorkerProviderAdapter('codex'),
   new WorkerProviderAdapter('ollama'),
 ];

@@ -19,22 +19,8 @@ export function defaultClaudeCommand(): string {
   return join(dirname(manifestPath), manifest.bin.claude);
 }
 
-export type ClaudeAdapterOptions = {
-  /**
-   * The provider id this adapter answers to. `claude` is the API-key lane; `claude-sub` is the same
-   * CLI on a subscription login (ADR-041). Usage records carry this id.
-   */
-  id?: string;
-  /**
-   * False for a subscription login: the CLI still reports a notional `total_cost_usd`, but nothing
-   * is billed, so the adapter records $0 and the ledger and the monthly budget never count it.
-   */
-  metered?: boolean;
-};
-
 export class ClaudeAdapter implements ProviderAdapter {
-  readonly id: string;
-  private readonly metered: boolean;
+  readonly id = 'claude';
   readonly capabilities = {
     streaming: true,
     resume: true,
@@ -46,17 +32,13 @@ export class ClaudeAdapter implements ProviderAdapter {
     private readonly command = defaultClaudeCommand(),
     private readonly model?: string,
     private readonly processRunner: ProcessRunner = jsonLineProcess,
-    options: ClaudeAdapterOptions = {},
-  ) {
-    this.id = options.id ?? 'claude';
-    this.metered = options.metered ?? true;
-  }
+  ) {}
   async diagnose() {
     if (!(await executableAvailable(this.command)))
       return {
         available: false,
         authenticated: false,
-        detail: 'Claude CLI not found. Install Claude Code and run claude auth login.',
+        detail: 'Claude CLI not found. Install Claude Code and set ANTHROPIC_API_KEY.',
       };
     const [version, auth] = await Promise.all([
       capture(this.command, ['--version']),
@@ -66,7 +48,10 @@ export class ClaudeAdapter implements ProviderAdapter {
       available: true,
       authenticated: auth.code === 0,
       version: version.stdout.trim() || version.stderr.trim(),
-      detail: auth.code === 0 ? 'Claude CLI authenticated' : 'Run claude auth login',
+      detail:
+        auth.code === 0
+          ? 'Claude CLI authenticated'
+          : 'Claude CLI is not authenticated; set ANTHROPIC_API_KEY',
     };
   }
   async *run(
@@ -120,7 +105,7 @@ export class ClaudeAdapter implements ProviderAdapter {
         cwd: options.cwd,
         signal: deadline.signal,
       })) {
-        for (const event of mapClaudeEvent(raw, request.outputSchema, { metered: this.metered })) {
+        for (const event of mapClaudeEvent(raw, request.outputSchema)) {
           if (event.type === 'error') terminalError = true;
           yield deadline.didTimeout() && event.type === 'error' && event.code === 'CANCELLED'
             ? timeoutEvent(request.timeoutMs)
@@ -146,7 +131,6 @@ export class ClaudeAdapter implements ProviderAdapter {
 export function mapClaudeEvent(
   raw: unknown,
   outputSchema?: Record<string, unknown>,
-  options: { metered?: boolean } = {},
 ): ProviderEvent[] {
   if (!raw || typeof raw !== 'object') return [];
   const value = raw as Record<string, any>;
@@ -185,8 +169,7 @@ export function mapClaudeEvent(
         inputTokens: Number(usage.input_tokens ?? 0) + cachedInputTokens,
         cachedInputTokens,
         outputTokens: Number(usage.output_tokens ?? 0),
-        // A subscription login reports a notional cost that nothing is billed for (ADR-041).
-        usd: options.metered === false ? 0 : Number(value.total_cost_usd ?? 0),
+        usd: Number(value.total_cost_usd ?? 0),
       },
     ];
     if (value.is_error === true) {

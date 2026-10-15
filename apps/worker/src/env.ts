@@ -15,7 +15,6 @@ export const WorkerEnvironmentSchema = z.object({
   FORGE_WORKER_ID: z.string().min(1),
   FORGE_WORKER_EXECUTOR: z.enum(['docker', 'host']).default('docker'),
   FORGE_SANDBOX_IMAGE: z.string().min(1).default('theforge-worker-sandbox:local'),
-  FORGE_CLAUDE_CREDENTIALS_FILE: z.string().min(1).optional(),
   FORGE_CODEX_AUTH_FILE: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   /**

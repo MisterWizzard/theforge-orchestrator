@@ -31,7 +31,7 @@ import { createRegistry } from './registry.js';
  * touches the network.
  */
 const NOW = new Date('2026-09-27T03:00:00.000Z');
-const REPO = 'MisterWizzard/shopfront';
+const REPO = 'example-org/shopfront';
 
 const sha = (fill: string): string => fill.repeat(40).slice(0, 40);
 const SHA_FAIL = sha('a');
@@ -226,7 +226,7 @@ describe('classifyRuns', () => {
   });
 
   it('ignores runs GitHub starts on its own behalf (event dynamic), as seen on shopfront', () => {
-    // Real shape from `gh run list --commit c8b2fcf0` on MisterWizzard/shopfront, 27/09/2026.
+    // Real shape from `gh run list --commit c8b2fcf0` on example-org/shopfront, 27/09/2026.
     const dependabot = run({
       name: 'npm_and_yarn in /. for esbuild - Update #1592487556',
       workflowName: 'Dependabot Updates',
@@ -698,19 +698,19 @@ describe('forge ci-watch', () => {
   it('adds --repo repositories to the pull request sweep, and validates its flags', async () => {
     const gh = fakeGh({
       pulls: {
-        'MisterWizzard/other': [
+        'example-org/other': [
           systemPull({ number: 3, headRefName: 'forge/abababab', headRefOid: HEAD_FAIL }),
         ],
       },
     });
     const { run: forge, out, err } = harness({ FORGE_OUTBOX_DIR: outbox }, gh.exec);
-    expect(await forge(['--repo=MisterWizzard/other'])).toBe(0);
+    expect(await forge(['--repo=example-org/other'])).toBe(0);
     // Repositories are swept in sorted order: the allowlist plus --repo.
     expect(gh.prListRepos()).toEqual(
-      [...DEFAULT_CONFIG.mergeAllowlist, 'MisterWizzard/other'].sort(),
+      [...DEFAULT_CONFIG.mergeAllowlist, 'example-org/other'].sort(),
     );
     expect(out).toContain(
-      'pr MisterWizzard/other#3 @ 11111111: FAILED (CI / test) -> ci.system_pr_failed -> file sent (attempt 1)',
+      'pr example-org/other#3 @ 11111111: FAILED (CI / test) -> ci.system_pr_failed -> file sent (attempt 1)',
     );
 
     expect(await forge(['--hours=0'])).toBe(2);

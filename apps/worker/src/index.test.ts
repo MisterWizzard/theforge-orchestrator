@@ -684,53 +684,20 @@ describe('Docker worker sandbox', () => {
     expect(process.env.FORGE_EXTERNALLY_SANDBOXED).toBeUndefined();
   });
 
-  /**
-   * ADR-039. A key that is not scoped to a workspace is refused by the API unless every request
-   * names one; the Claude CLI adds `ANTHROPIC_CUSTOM_HEADERS` to each request it makes. The id is
-   * not a secret, so it is a plain `--env`, and only the Claude container gets it.
-   */
-  /**
-   * ADR-041. `claude` (the API-key lane) and `claude-sub` (a subscription login) are two ids for one
-   * CLI. The container's entrypoint knows only `claude` and `codex`, so both must reach it as
-   * `claude`; and the workspace header belongs to the API lane, since a subscription login is not an
-   * API key and has no workspace to name.
-   */
-  it("runs the subscription lane as the same CLI, without the API lane's workspace header", async () => {
-    const root = resolve('.forge/workspaces');
-    await mkdir(root, { recursive: true });
-    const workspace = await mkdtemp(join(root, 'provider-sub-lane-'));
-    const id = 'wrkspc_01ExampleWorkspaceId';
-    const entrypointArg = (args: string[]) =>
-      args[args.indexOf('theforge-provider-entrypoint') + 2];
-    const sub = createProviderDockerRunArgs('claude-sub', workspace, 'sub-lane', ['--version'], id);
-    const api = createProviderDockerRunArgs('claude', workspace, 'api-lane', ['--version'], id);
-    expect(entrypointArg(sub)).toBe('claude');
-    expect(entrypointArg(api)).toBe('claude');
-    expect(sub).not.toContain('claude-sub');
-    expect(sub.join(' ')).not.toContain('ANTHROPIC_CUSTOM_HEADERS');
-    expect(sub.filter((value) => value === '--env')).toHaveLength(2);
-    expect(api.join(' ')).toContain(`anthropic-workspace-id: ${id}`);
-  });
-
-  it('gives each lane exactly one kind of credential, so both can be advertised at once', () => {
+  it('gives Claude only an API key, and Codex a key first and then its auth file', () => {
     const everything = {
       ANTHROPIC_API_KEY: 'sk-ant-api-key',
       OPENAI_API_KEY: 'sk-openai-key',
-      FORGE_CLAUDE_CREDENTIALS_FILE: 'C:/vault/claude.json',
       FORGE_CODEX_AUTH_FILE: 'C:/vault/codex.json',
     };
-    // The API lane uses the key, and the login file never reaches it.
     expect(credentialSourceFor('claude', everything)).toEqual({
       kind: 'api-key',
       value: 'sk-ant-api-key',
     });
-    // The subscription lane uses the login file, and the key never reaches it - which is the whole
-    // point: before the split the key silently won over the file under the single id.
-    expect(credentialSourceFor('claude-sub', everything)).toEqual({
-      kind: 'auth-file',
-      path: 'C:/vault/claude.json',
-    });
-    // Codex is unchanged: key first, then its auth file.
+    // Claude never borrows another provider's file.
+    expect(
+      credentialSourceFor('claude', { FORGE_CODEX_AUTH_FILE: 'C:/vault/codex.json' }),
+    ).toMatchObject({ kind: 'none' });
     expect(credentialSourceFor('codex', everything)).toEqual({
       kind: 'api-key',
       value: 'sk-openai-key',
@@ -741,16 +708,11 @@ describe('Docker worker sandbox', () => {
     });
   });
 
-  it('does not borrow the login file for the API lane, or the key for the login lane', () => {
-    const fileOnly = { FORGE_CLAUDE_CREDENTIALS_FILE: 'C:/vault/claude.json' };
-    const keyOnly = { ANTHROPIC_API_KEY: 'sk-ant-api-key' };
-    expect(credentialSourceFor('claude', fileOnly)).toMatchObject({ kind: 'none' });
-    expect(credentialSourceFor('claude-sub', keyOnly)).toEqual({
-      kind: 'auth-file',
-      path: undefined,
-    });
-  });
-
+  /**
+   * ADR-039. A key that is not scoped to a workspace is refused by the API unless every request
+   * names one; the Claude CLI adds `ANTHROPIC_CUSTOM_HEADERS` to each request it makes. The id is
+   * not a secret, so it is a plain `--env`, and only the Claude container gets it.
+   */
   it('passes the Anthropic workspace id to the Claude container only', async () => {
     const root = resolve('.forge/workspaces');
     await mkdir(root, { recursive: true });

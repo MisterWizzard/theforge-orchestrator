@@ -75,13 +75,9 @@ export const roles = [
  * in the worker's Docker sandbox with a credential; `ollama` is the local model
  * server, spoken to over HTTP from the worker process itself (ADR-021).
  */
-export const providerIds = ['claude', 'claude-sub', 'codex', 'ollama'] as const;
-/**
- * Providers a run may be configured with. Local models are never pinned (ADR-022). `claude` is the
- * metered API-key lane; `claude-sub` is the same CLI on a subscription login, recorded at $0
- * (ADR-041).
- */
-export const cloudProviderIds = ['claude', 'claude-sub', 'codex'] as const;
+export const providerIds = ['claude', 'codex', 'ollama'] as const;
+/** Providers a run may be configured with. Local models are never pinned (ADR-022). */
+export const cloudProviderIds = ['claude', 'codex'] as const;
 export const actionClasses = ['green', 'amber', 'red'] as const;
 export const blockerClasses = [
   'transient',

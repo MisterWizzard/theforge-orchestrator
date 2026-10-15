@@ -67,7 +67,7 @@ export const DEFAULT_CONFIG: Tier0Config = {
   //   - PulseApp's CI had been red on `main` since May - a desynced lock file and
   //     a test fixture that expired on 20/05/2026 - so nothing could ever have been
   //     merged here anyway. Both fixed.
-  mergeAllowlist: ['MisterWizzard/shopfront', 'MisterWizzard/PulseApp'],
+  mergeAllowlist: ['example-org/shopfront', 'example-org/pulse-app'],
   trustedAuthors: ['dependabot[bot]', 'app/dependabot'],
 };
 

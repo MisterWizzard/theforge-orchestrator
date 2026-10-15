@@ -212,7 +212,6 @@ describe('built worker daemon portability lifecycle', () => {
       const childEnvironment = { ...process.env };
       delete childEnvironment.ANTHROPIC_API_KEY;
       delete childEnvironment.OPENAI_API_KEY;
-      delete childEnvironment.FORGE_CLAUDE_CREDENTIALS_FILE;
       delete childEnvironment.FORGE_CODEX_AUTH_FILE;
       child = spawn(process.execPath, [resolve('apps/worker/dist/index.js')], {
         env: {

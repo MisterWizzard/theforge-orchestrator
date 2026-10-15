@@ -11,7 +11,7 @@ import {
 
 const schema = z.object({
   FORGE_WORKER_TOKEN: z.string().min(32),
-  FORGE_CLAUDE_CREDENTIALS_FILE: z.string().min(1).optional(),
+  FORGE_CODEX_AUTH_FILE: z.string().min(1).optional(),
   HOST: z.string().min(1).default('127.0.0.1'),
   PORT: z.coerce.number().int().positive().default(4400),
 });
@@ -47,11 +47,11 @@ describe('parseEnvironment', () => {
   it('treats KEY= as unset for optional and defaulted fields', () => {
     const parsed = parseEnvironment(
       schema,
-      { FORGE_WORKER_TOKEN: token, FORGE_CLAUDE_CREDENTIALS_FILE: '', HOST: '', PORT: '' },
+      { FORGE_WORKER_TOKEN: token, FORGE_CODEX_AUTH_FILE: '', HOST: '', PORT: '' },
       'worker',
     );
     expect(parsed).toEqual({ FORGE_WORKER_TOKEN: token, HOST: '127.0.0.1', PORT: 4400 });
-    expect(parsed.FORGE_CLAUDE_CREDENTIALS_FILE).toBeUndefined();
+    expect(parsed.FORGE_CODEX_AUTH_FILE).toBeUndefined();
   });
 
   it('throws an EnvironmentError listing one line per variable with its remedy', () => {

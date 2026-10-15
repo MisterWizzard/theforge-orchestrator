@@ -2,7 +2,7 @@
 
 ## User journey
 
-1. User connects a GitHub repository and configures Claude/Codex credentials or authenticated local CLIs.
+1. User connects a GitHub repository and configures Anthropic/OpenAI API keys or a Codex auth file.
 2. User submits an objective, optional constraints, budget, and approval profile.
 3. TheForge creates a durable run, gathers repository context, and produces an executable plan.
 4. A separate role critiques the plan; the planner revises it.

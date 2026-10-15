@@ -326,7 +326,6 @@ export function Dashboard() {
                   {label}
                   <select value={value} onChange={(event) => setter(event.target.value)}>
                     <option value="claude">Claude</option>
-                    <option value="claude-sub">Claude (subscription)</option>
                     <option value="codex">Codex</option>
                   </select>
                 </label>

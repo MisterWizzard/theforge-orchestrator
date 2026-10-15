@@ -61,8 +61,6 @@ export const ENVIRONMENT_REMEDIES: Readonly<Record<string, string>> = {
     'a fine-grained token limited to the target repository (Metadata read, Contents and Pull requests read/write), or leave the line out',
   ANTHROPIC_API_KEY: 'an Anthropic API key, or leave the line out',
   OPENAI_API_KEY: 'an OpenAI API key, or leave the line out',
-  FORGE_CLAUDE_CREDENTIALS_FILE:
-    'path to an isolated Claude Code subscription login (.credentials.json) for the claude-sub lane, which is recorded at $0 and never touches ANTHROPIC_API_KEY; or leave the line out',
   FORGE_CODEX_AUTH_FILE: 'path to an isolated Codex auth.json file, or leave the line out',
   FORGE_HALT_FILE:
     'an absolute path for the kill-switch file, or leave the line empty for <workspace root>/../FORGE_HALT',

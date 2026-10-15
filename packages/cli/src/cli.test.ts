@@ -572,7 +572,7 @@ describe('notify-test', () => {
 
 describe('tier0-ingest', () => {
   const record = (overrides: Record<string, unknown> = {}) => ({
-    repository: 'MisterWizzard/shopfront',
+    repository: 'example-org/shopfront',
     number: 26,
     title: 'chore(deps): bump nanoid from 3.3.11 to 3.3.18',
     author: 'dependabot[bot]',

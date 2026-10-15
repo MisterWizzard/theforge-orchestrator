@@ -289,7 +289,7 @@ export const ROLE_WORK_CLASS: Readonly<Record<PipelineRole, WorkClass>> = {
 export const LOCAL_FALLBACK_ROLES: readonly PipelineRole[] = ['planner', 'critic'];
 
 /** Adapter ids that are cloud providers, in the order preferred for a substitute. */
-export const CLOUD_PROVIDER_IDS = ['claude', 'claude-sub', 'codex'] as const;
+export const CLOUD_PROVIDER_IDS = ['claude', 'codex'] as const;
 /** The adapter id that fronts Ollama. */
 export const LOCAL_PROVIDER_ID = 'ollama';
 

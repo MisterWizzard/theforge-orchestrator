@@ -128,7 +128,7 @@ describe('Guards with a monthly budget', () => {
 
   it('does not count usage recorded before countFrom', () => {
     const records = [
-      usage('subscription-era', 100, '2026-10-05T02:00:00Z'),
+      usage('unbilled', 100, '2026-10-05T02:00:00Z'),
       usage('billed', 20, '2026-10-11T02:00:00Z'),
     ];
     const { guards } = harness(records, '2026-10-12T04:00:00Z', {

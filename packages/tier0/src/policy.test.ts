@@ -9,7 +9,7 @@ import {
 } from './policy.js';
 
 const pr = (overrides: Partial<PullRequestFacts> = {}): PullRequestFacts => ({
-  repository: 'MisterWizzard/shopfront',
+  repository: 'example-org/shopfront',
   number: 26,
   author: 'dependabot[bot]',
   title: 'chore(deps): bump nanoid from 3.3.11 to 3.3.18',
@@ -44,13 +44,13 @@ describe('Tier 0 merge policy', () => {
     // side-effect of some other change: policy B4/B5 wants an explicit say-so, and
     // this assertion is what forces the conversation.
     expect([...DEFAULT_CONFIG.mergeAllowlist].sort()).toEqual([
-      'MisterWizzard/PulseApp',
-      'MisterWizzard/shopfront',
+      'example-org/pulse-app',
+      'example-org/shopfront',
     ]);
   });
 
   it('merges an allowlisted repository other than shopfront when green', () => {
-    const decision = decide(pr({ repository: 'MisterWizzard/PulseApp' }), [
+    const decision = decide(pr({ repository: 'example-org/pulse-app' }), [
       pass('test'),
       pass('lint'),
     ]);
@@ -60,7 +60,7 @@ describe('Tier 0 merge policy', () => {
   it('refuses to merge a repository that is not on the allowlist, even when green', () => {
     // The disqualifier must win over a perfect check run. B4 limits merging to
     // shopfront alone; a green suite elsewhere does not earn a merge.
-    const decision = decide(pr({ repository: 'MisterWizzard/game-app' }), [
+    const decision = decide(pr({ repository: 'example-org/game-app' }), [
       pass('test'),
       pass('lint'),
     ]);
@@ -153,7 +153,7 @@ describe('argument safety', () => {
   it('accepts the shapes Tier 0 legitimately passes', async () => {
     const { assertSafeArgument } = await import('./runner.js');
     for (const good of [
-      'MisterWizzard/shopfront',
+      'example-org/shopfront',
       '--frozen-lockfile',
       'number,title,author',
       'b7cfc7c9aa11',

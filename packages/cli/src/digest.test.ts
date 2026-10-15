@@ -23,7 +23,6 @@ import {
   parseReminders,
   remindersFilePath,
   renderMarkdown,
-  unmeteredKind,
   weekRange,
   weeklyDue,
   zonedTime,
@@ -97,20 +96,6 @@ function harness(
   });
   return { out, err, run: (argv) => createRegistry([command]).run(['digest', ...argv], ctx) };
 }
-
-describe('why a call cost nothing (ADR-021, ADR-041)', () => {
-  it('calls Codex and the Claude subscription lane subscriptions, and ollama local', () => {
-    expect(unmeteredKind('codex')).toBe('subscription');
-    expect(unmeteredKind('claude-sub')).toBe('subscription');
-    expect(unmeteredKind('ollama')).toBe('local');
-  });
-
-  it('does not label the metered API lane, or an unknown provider, as anything', () => {
-    // A $0 record on the API lane is not a subscription call; it stays a plain "$0".
-    expect(unmeteredKind('claude')).toBe('$0');
-    expect(unmeteredKind('something-else')).toBe('$0');
-  });
-});
 
 describe('digest windows in Australia/Sydney', () => {
   it('places 17:30 and 05:00 local on the right instants, daylight saving included', () => {
@@ -322,7 +307,7 @@ function task(id: string, runId: string, title: string): Task {
 }
 
 const tier0Record = (overrides: Record<string, unknown>) => ({
-  repository: 'MisterWizzard/shopfront',
+  repository: 'example-org/shopfront',
   number: 26,
   title: 'chore(deps): bump nanoid',
   author: 'dependabot[bot]',
@@ -681,9 +666,9 @@ suite('digest against the database', () => {
     expect(text).toContain(
       '## Tier 0: 3 outcomes in 1 file (1 merged, 1 deferred, 1 escalated, 0 other)',
     );
-    expect(text).toContain('- merged: MisterWizzard/shopfront#26');
-    expect(text).toContain('- deferred: MisterWizzard/shopfront#28');
-    expect(text).toContain('- escalated: MisterWizzard/shopfront#27');
+    expect(text).toContain('- merged: example-org/shopfront#26');
+    expect(text).toContain('- deferred: example-org/shopfront#28');
+    expect(text).toContain('- escalated: example-org/shopfront#27');
     expect(text).not.toContain('#20');
 
     expect(text).toContain(
@@ -852,9 +837,9 @@ suite('digest against the database', () => {
     expect(data.tier0).toMatchObject({
       files: 1,
       outcomes: 3,
-      merged: ['MisterWizzard/shopfront#26'],
-      deferred: ['MisterWizzard/shopfront#28'],
-      escalated: ['MisterWizzard/shopfront#27'],
+      merged: ['example-org/shopfront#26'],
+      deferred: ['example-org/shopfront#28'],
+      escalated: ['example-org/shopfront#27'],
     });
     expect(data.routing).toMatchObject({ wired: false, cloudCalls: 2, unmeteredCalls: 1 });
     expect(data.reminders).toEqual({
@@ -1016,7 +1001,7 @@ suite('digest against the database', () => {
     expect(data.window.from).toBe('2026-09-24T19:00:00.000Z');
     expect(data.runs.finished.items.map((item) => item.id)).toEqual(['done1729']);
     expect(data.spend.window).toMatchObject({ usd: 9, count: 1 });
-    expect(data.tier0.merged).toEqual(['MisterWizzard/shopfront#20']);
+    expect(data.tier0.merged).toEqual(['example-org/shopfront#20']);
     // The 17:00 spend.warn is a guard event of that day; the 00:00 pause is the next morning's.
     expect(data.guards.counts).toEqual({ 'spend.warn': 1 });
   }, 30_000);

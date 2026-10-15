@@ -57,8 +57,8 @@ describe('FileOutboxChannel', () => {
 
   it('sanitises kind and key into file-safe tokens', () => {
     expect(fileToken('ci.failed')).toBe('ci.failed');
-    expect(fileToken('tier0:MisterWizzard/shopfront#26@abcdef')).toBe(
-      'tier0-MisterWizzard-shopfront-26-abcdef',
+    expect(fileToken('tier0:example-org/shopfront#26@abcdef')).toBe(
+      'tier0-example-org-shopfront-26-abcdef',
     );
     expect(fileToken('///')).toBe('x');
     expect(fileToken('a'.repeat(100)).length).toBe(48);

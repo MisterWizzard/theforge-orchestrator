@@ -95,16 +95,9 @@ const worker = {
    */
   providerFaults: {} as Record<string, string>,
 };
-/**
- * The cloud providers that run in the Docker sandbox with a credential; ollama runs in this process.
- * `claude` and `claude-sub` are the same CLI with different credentials (ADR-041).
- */
-const dockerProviderIds = ['claude', 'claude-sub', 'codex'] as const;
+/** The cloud CLIs that run in the Docker sandbox with a credential; ollama runs in this process. */
+const dockerProviderIds = ['claude', 'codex'] as const;
 type DockerProviderId = (typeof dockerProviderIds)[number];
-/** The CLI a provider id runs inside the sandbox; the container entrypoint knows only these two. */
-function cliFor(providerId: DockerProviderId): 'claude' | 'codex' {
-  return providerId === 'codex' ? 'codex' : 'claude';
-}
 type WorkerWorkspaceFile = { path: string; contentBase64: string; executable: boolean };
 type WorkerWorkspaceSnapshot = {
   repositoryUrl: string;
@@ -1242,28 +1235,15 @@ export type CredentialSource =
   | { kind: 'auth-file'; path: string | undefined }
   | { kind: 'none'; reason: string };
 
-/**
- * `claude` takes the API key and only the API key; `claude-sub` takes the subscription login file
- * and only that (ADR-041). One credential kind per id is what lets both lanes be advertised from the
- * same worker at once; before this, the key silently won over the file under the single id.
- * Codex keeps its earlier order: key, then auth file.
- */
+/** `claude` takes an API key and nothing else. Codex takes a key, then an auth file. */
 export function credentialSourceFor(
   providerId: DockerProviderId,
-  source: Pick<
-    WorkerEnvironment,
-    | 'ANTHROPIC_API_KEY'
-    | 'OPENAI_API_KEY'
-    | 'FORGE_CLAUDE_CREDENTIALS_FILE'
-    | 'FORGE_CODEX_AUTH_FILE'
-  >,
+  source: Pick<WorkerEnvironment, 'ANTHROPIC_API_KEY' | 'OPENAI_API_KEY' | 'FORGE_CODEX_AUTH_FILE'>,
 ): CredentialSource {
   if (providerId === 'claude')
     return source.ANTHROPIC_API_KEY
       ? { kind: 'api-key', value: source.ANTHROPIC_API_KEY }
       : { kind: 'none', reason: 'No Claude API key is configured (ANTHROPIC_API_KEY)' };
-  if (providerId === 'claude-sub')
-    return { kind: 'auth-file', path: source.FORGE_CLAUDE_CREDENTIALS_FILE };
   return source.OPENAI_API_KEY
     ? { kind: 'api-key', value: source.OPENAI_API_KEY }
     : { kind: 'auth-file', path: source.FORGE_CODEX_AUTH_FILE };
@@ -1335,12 +1315,8 @@ function createDockerProviderAdapter(
   sandbox: SandboxRunnerOptions = {},
 ): ProviderAdapter {
   const runner = createDockerProviderRunner(providerId, credential, sandbox);
-  return providerId !== 'codex'
-    ? // `claude-sub` runs the same CLI but is not billed, so its adapter records $0 (ADR-041).
-      new ClaudeAdapter('claude', undefined, runner, {
-        id: providerId,
-        metered: providerId === 'claude',
-      })
+  return providerId === 'claude'
+    ? new ClaudeAdapter('claude', undefined, runner)
     : // The adapter assembles arguments for a CLI that will run in the container
       // this worker launches, not in this process, so it is handed that
       // container's environment - the one carrying the external-sandbox marker
@@ -1397,7 +1373,7 @@ function createDockerProviderRunner(
       kind: credential.kind,
       contentBase64: credential.contentBase64,
     };
-    if (cliFor(providerId) === 'claude') {
+    if (providerId === 'claude') {
       const promptIndex = providerArgs.indexOf('-p');
       if (promptIndex >= 0) {
         const prompt = providerArgs[promptIndex + 1];
@@ -1471,7 +1447,7 @@ export function createProviderDockerRunArgs(
     '--entrypoint',
     'theforge-provider-entrypoint',
     env.FORGE_SANDBOX_IMAGE,
-    cliFor(providerId),
+    providerId,
     ...providerArgs,
   ];
 }
@@ -1490,11 +1466,7 @@ async function diagnoseDockerProvider(providerId: DockerProviderId): Promise<Pro
   const runner = createDockerProviderRunner(providerId, credential);
   const signal = AbortSignal.timeout(30_000);
   const commands =
-    credential.kind === 'api-key'
-      ? [['--version']]
-      : cliFor(providerId) === 'claude'
-        ? [['--version'], ['auth', 'status']]
-        : [['--version'], ['login', 'status']];
+    credential.kind === 'api-key' ? [['--version']] : [['--version'], ['login', 'status']];
   for (const args of commands) {
     for await (const event of runner({ command: providerId, args, cwd: root, signal })) {
       // A zero exit status is the diagnostic; human-readable output is intentionally ignored.

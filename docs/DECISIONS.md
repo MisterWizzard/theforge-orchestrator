@@ -216,7 +216,7 @@ Benchmarked on NODEE (RTX 3090, 24 GB), Ollama 0.34.4, warm, temperature 0:
 
 - `docs/RELEASE_REVIEW.md` is the requirement-to-evidence matrix for this release and is declared by this ADR. `docs/THREAT_MODEL.md` and `docs/SECURITY.md` are rewritten for `main` @ `b8b0ed8`; `docs/evidence-dependency-audit-2026-09-26.txt` records both audits verbatim with each dev-only advisory dispositioned.
 - **Release label: `release_candidate`, not `fully_built`.** The review found CI on `main` red on every push since PR #14 (`36207611749` … `36213642655`) on two test defects the Windows gates could not see (a drive-letter assertion in `packages/tier0/src/report.test.ts` and a coordinator test that clones the shallow CI checkout). Both are fixed and reproduced locally in the review; the fix is unverified in CI until it merges. Live cross-provider execution (F050/F051), live Home Assistant or email delivery, the persistent runtime, the unattended restart test and the first real local-model stage are all still undemonstrated. `fully_built` requires a green CI run on all four jobs after this merge, one live run with the critic or reviewer on Codex with its subscription cost recorded, and one real escalation received.
-- **Tier 0's merge is an Amber action under a standing approval**, not a Red per-action one. `docs/SECURITY.md` lists "merge to protected branches" as Red for the pipeline, and that stands. Tier 0 merges Dependabot pull requests into `MisterWizzard/shopfront` only, on green checks, after a pre-merge re-check, with every outcome ingested into the notification channels. The allowlist is the approval, given once (policies B4/B5); expanding it is a Red decision made in a reviewed change to `packages/tier0/src/policy.ts`. Recorded here because AGENTS.md §3 requires a conflict between SECURITY.md and shipped behaviour to be resolved in this file rather than silently.
+- **Tier 0's merge is an Amber action under a standing approval**, not a Red per-action one. `docs/SECURITY.md` lists "merge to protected branches" as Red for the pipeline, and that stands. Tier 0 merges Dependabot pull requests into `example-org/shopfront` only, on green checks, after a pre-merge re-check, with every outcome ingested into the notification channels. The allowlist is the approval, given once (policies B4/B5); expanding it is a Red decision made in a reviewed change to `packages/tier0/src/policy.ts`. Recorded here because AGENTS.md §3 requires a conflict between SECURITY.md and shipped behaviour to be resolved in this file rather than silently.
 - Remediated in the review, each with a test: constant-time bearer-token comparison (`secretEquals` in `@theforge/policy`, used at every coordinator check); a specific fail-fast remedy for every coordinator and worker variable; the two CI test defects; `next dev` bound to loopback like `next start`; three dev-only advisories patched by override. GitHub Actions are SHA-pinned and the portable job's test step says what it skips; a non-blocking full `pnpm audit` step reports the dev-only list on every run.
 - Left open, recorded as residual risks in the threat model and as findings in the review: `C:\forge` readable and writable by every local account (which also makes the kill-switch file writable by them); Tier 0 executing untrusted dependency code on the host under the operator's `gh` token; the Home Assistant token travelling over plain HTTP on the LAN once it exists; the web control centre relying on network position rather than a login; a refless bare cache making a run wait instead of fail.
 
@@ -628,7 +628,7 @@ Estimated effect: roughly 54 billed minutes per merged pull request becomes roug
   matters. If macOS ever becomes a supported target, this decision is the first to revisit.
 - **A direct push to `main` gets `quality` but not the portability or browser legs.** That is
   a real, if narrow, hole. It exists because there is **no branch protection on this
-  repository** - it is a GitHub Pro feature and the repository was private on the free plan at the time -
+  repository** - it was not available for this repository at the time -
   so direct pushes cannot be prevented, only cheaply checked.
 - **The merge gate is discipline, not enforcement.** Since GitHub requires no status checks
   here, BLK-013's rule of waiting for a completed, all-green rollup is upheld only by whoever
@@ -1124,9 +1124,9 @@ over, so a healthy day's digest is unchanged.
   (which the unblock step for BLK-031 already is), and a key that breaks _after_ start is caught
   by the failing job, the fallback, and the new digest line, not by the probe. The task brief
   asked for a cache of some minutes; with one probe per start there is nothing to cache.
-- **Claude on an API key only.** A Claude OAuth credentials file is still checked by
-  `claude auth status`, which says nothing about credit or workspace; the OpenAI key reaching
-  Codex is still checked by `codex login status`. Neither is probed here.
+- **Claude is probed on its API key only.** The Claude CLI's own `claude auth status` says nothing
+  about credit or workspace; the OpenAI key reaching Codex is still checked by
+  `codex login status`. Neither CLI check is a probe of the account.
 - The probe model id is a constant. If Anthropic retires it the API answers 404, which is
   classed inconclusive, so the probe quietly stops proving anything and the worker log says
   "could not be verified". Update `KEY_PROBE_MODEL` then.
@@ -1280,67 +1280,3 @@ HEAD was `75aea598`, GitHub's current `main`. The live cache itself was not touc
 reads `2a8bd4cf`.
 
 **Supersedes / superseded by:** resolves BLK-032; nothing superseded.
-## ADR-041 - Claude has two lanes: the metered API key and the subscription login
-
-**Date:** 2026-10-13
-**Status:** accepted (step 1 of 2; step 2, removing Codex, is a separate decision to be recorded when it is built)
-
-### Context
-
-Dan, 13/10/2026, wants GPT (Codex) out of the Forge and Claude used alone, to reduce cost, with the
-Claude side split into the metered API key and the login lane. His answers to the three questions that
-decide the shape: the aim is **cost reduction**; at the daily cap the Forge should **go local** (as
-today, policy B3); and the subscription lane shares the login's usage limits.
-
-Codex gives the Forge three things: a lane that costs nothing metered, a second vendor's judgement
-for the critic and reviewer, and a substitute when Claude fails. Dropping it is only sensible once the
-first and third are provided another way, so this is done in two steps and this ADR is the first: add
-the free Claude lane and prove it. Removing Codex follows.
-
-### Decision
-
-- A second provider id, **`claude-sub`**, runs the same Claude Code CLI in the same sandbox on a
-  **subscription login** (`FORGE_CLAUDE_CREDENTIALS_FILE`). The existing `claude` id becomes the
-  **API-key lane** and takes `ANTHROPIC_API_KEY` only. Each id takes exactly one kind of credential
-  (`credentialSourceFor`), which is what lets one worker advertise both. Before this the key silently
-  won over the login file under the single id, so the two could not coexist.
-- **`claude-sub` records $0.** The CLI reports a notional `total_cost_usd` even on a subscription;
-  `ClaudeAdapter` takes `metered: false` for this lane and discards it. Otherwise the daily cap and the
-  monthly budget (ADR-037) would count dollars the API never charged. It joins `UNMETERED_PROVIDERS`
-  and the digest labels it `(subscription)`.
-- **Routing is unchanged in shape.** `CLOUD_PROVIDER_IDS` is `claude`, `claude-sub`, `codex`, so
-  `claude-sub` is the first substitute for a failed or absent `claude` and can be pinned per role from
-  the run form. **It never substitutes at the cap**, per Dan's answer: past the ceiling planner and
-  critic go to the local model and builder and reviewer stop (ADR-022, ADR-028, policy B3), exactly as
-  for Codex.
-- **The container entrypoint is untouched.** It knows only `claude` and `codex`, so both Claude ids reach
-  it as `claude` (`cliFor`); the sandbox image needs no rebuild. The workspace header (ADR-039) and the
-  key probe (ADR-038) belong to the API lane only: a subscription login is not an API key.
-
-### Consequences
-
-- **A dedicated login is strongly advised.** The CLI inside the container may refresh and rotate its tokens on a copy of the file; if that copy is the operator's everyday login, the host's login can be invalidated. A separate login made with `CLAUDE_CONFIG_DIR=<dir> claude auth login` avoids this.
-- **Breaking, narrowly:** an install with a login file and no API key used to get `claude`; it now gets
-  `claude-sub` and no `claude`.
-- **Independence is weaker than Codex's.** Pinning the reviewer to `claude-sub` gives a different
-  credential and a free call, not a different model. The ADR-035 recovery attempt that used a Codex
-  reviewer would need another route after step 2.
-- Step 2 (delete `packages/provider-codex`, the Codex CLI from the sandbox image, `OPENAI_API_KEY` and
-  `FORGE_CODEX_AUTH_FILE`, the run-form option and 17 tests) is not done here.
-
-### Verified
-
-Fourteen new tests: the adapter records $0 for `metered: false` and the real cost otherwise, in both
-`mapClaudeEvent` and a full run, and answers to the id it is given; the credential matrix (the key never
-reaches the login lane, the file never reaches the API lane, Codex unchanged); the container receives
-`claude` for both lanes and the workspace header only for the API lane; routing (first substitute, absent
-`claude`, pinned, and not at the ceiling); the guard treats it as unmetered and refuses it past the
-ceiling; the digest labels it. Full gate: see the pull request.
-
-**Not verified live.** The subscription lane has not run a stage. It needs a login at
-`FORGE_CLAUDE_CREDENTIALS_FILE`, a rebuilt and restarted worker and coordinator, and a run with a role
-pinned to `claude-sub`; none of that has happened.
-
-**Supersedes / superseded by:** extends ADR-024 (the default provider is unchanged; the substitute order
-gains a lane) and ADR-038 and ADR-039 (both now scoped to the API lane); step 2 will supersede ADR-019's
-Codex evidence and ADR-030's Codex sandbox handling.

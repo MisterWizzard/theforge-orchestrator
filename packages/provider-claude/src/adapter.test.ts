@@ -141,61 +141,6 @@ describe('Claude adapter contract', () => {
     });
   });
 
-  /**
-   * ADR-041. A subscription login reports a notional `total_cost_usd` that nothing is billed for. If
-   * it were recorded, the daily ceiling and the monthly budget would spend credits the API never
-   * charged, which is exactly how the first $11 of "spend" in the ledger arose.
-   */
-  it('records $0 for a subscription login, and the real cost for the API key', () => {
-    const result = {
-      type: 'result',
-      result: 'done',
-      usage: { input_tokens: 4, output_tokens: 10 },
-      total_cost_usd: 0.476506,
-    };
-    expect(mapClaudeEvent(result).at(0)).toMatchObject({ usd: 0.476506 });
-    expect(mapClaudeEvent(result, undefined, { metered: true }).at(0)).toMatchObject({
-      usd: 0.476506,
-    });
-    expect(mapClaudeEvent(result, undefined, { metered: false }).at(0)).toMatchObject({
-      usd: 0,
-      outputTokens: 10,
-    });
-  });
-
-  it('answers to the id it was given, and to claude by default', () => {
-    expect(new ClaudeAdapter().id).toBe('claude');
-    expect(new ClaudeAdapter('claude', undefined, undefined, { id: 'claude-sub' }).id).toBe(
-      'claude-sub',
-    );
-  });
-
-  it('applies the metering flag to the usage a run actually emits', async () => {
-    const lines = (usd: number) => [
-      {
-        type: 'result',
-        result: 'done',
-        usage: { input_tokens: 1, output_tokens: 1 },
-        total_cost_usd: usd,
-      },
-    ];
-    const run = async (options?: { id?: string; metered?: boolean }) => {
-      const adapter = new ClaudeAdapter(
-        'claude',
-        undefined,
-        async function* () {
-          yield* lines(0.9);
-        },
-        options,
-      );
-      const events: ProviderEvent[] = [];
-      for await (const event of adapter.run(request(), { cwd: process.cwd() })) events.push(event);
-      return events.find((event) => event.type === 'usage');
-    };
-    expect(await run()).toMatchObject({ usd: 0.9 });
-    expect(await run({ id: 'claude-sub', metered: false })).toMatchObject({ usd: 0 });
-  });
-
   it('reports no cache when the result omits the cache fields', () => {
     // An older CLI, or caching off. The total must then equal `input_tokens`
     // exactly, so this change cannot inflate a figure it has no business

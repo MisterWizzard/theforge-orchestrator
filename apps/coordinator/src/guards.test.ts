@@ -186,26 +186,6 @@ describe('Guards.beforeCloudCall', () => {
     expect(over.guards.beforeCloudCall('run-1', 'builder', 'codex').allowed).toBe(false);
   });
 
-  it('treats the Claude subscription lane like Codex: unmetered, and refused past the ceiling (ADR-041)', () => {
-    // `claude-sub` is the same CLI on a subscription login. It records $0, so it never moves the day
-    // total, and policy B3 still applies at the ceiling: local-only means local, and a subscription
-    // is not local. The API lane stays metered and estimated.
-    const { guards, warnings } = harness({}, [usage('a', 19.9)]);
-    expect(guards.beforeCloudCall('run-1', 'builder', 'claude-sub')).toEqual({
-      allowed: true,
-      estimatedUsd: 0,
-      metered: false,
-    });
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain('claude-sub usage is reported as $0');
-    // The API lane is metered and estimated: at a low spend it is let through as such.
-    expect(
-      harness({}, [usage('low', 2)]).guards.beforeCloudCall('run-1', 'builder', 'claude'),
-    ).toMatchObject({ allowed: true, metered: true });
-    const over = harness({}, [usage('b', 20)]);
-    expect(over.guards.beforeCloudCall('run-1', 'builder', 'claude-sub').allowed).toBe(false);
-  });
-
   it('lets a local provider through under an exceeded ceiling, silently and at $0', () => {
     // Ollama runs on the worker host (ADR-021): it is where the ceiling
     // routes to, so it can never be what the ceiling refuses, and it is not

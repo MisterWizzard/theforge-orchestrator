@@ -1137,12 +1137,9 @@ export function digestTitle(window: DigestWindow): string {
   }
 }
 
-/**
- * Why a call cost nothing: Codex and the Claude subscription lane are on a subscription, ollama is
- * local (ADR-021, ADR-041).
- */
-export function unmeteredKind(provider: string): string {
-  if (provider === 'codex' || provider === 'claude-sub') return 'subscription';
+/** Why a call cost nothing: Codex is on its subscription, ollama is local (ADR-021). */
+function unmeteredKind(provider: string): string {
+  if (provider === 'codex') return 'subscription';
   if (provider === 'ollama') return 'local';
   return '$0';
 }

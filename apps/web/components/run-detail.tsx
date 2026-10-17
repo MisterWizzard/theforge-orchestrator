@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { ApprovalAction } from './approval-action';
 const api = '/forge-api';
 type Detail = {
   run: {
@@ -218,24 +219,39 @@ export function RunDetail({ id }: { id: string }) {
             {data.approvals.length ? (
               data.approvals.map((approval) => (
                 <div className="approval" key={approval.id}>
-                  <div>
-                    <b>{approval.normalizedAction}</b>
-                    <small>
-                      {approval.actionClass} · {approval.scope}
-                    </small>
+                  <div className="approvalBody">
+                    <b>{approval.actionClass} action</b>
+                    <small>Expires {new Date(approval.expiresAt).toLocaleString()}</small>
+                    <ApprovalAction
+                      normalizedAction={approval.normalizedAction}
+                      scope={approval.scope}
+                    />
                   </div>
                   {approval.status === 'pending' ? (
-                    <span>
-                      <button onClick={() => decide(approval.id, 'rejected')}>Reject</button>
-                      <button onClick={() => decide(approval.id, 'approved')}>Approve</button>
-                    </span>
+                    <div className="approvalActions">
+                      <button
+                        onClick={() => decide(approval.id, 'rejected')}
+                        aria-label={`Reject ${approval.actionClass} action for run ${id.slice(0, 8)}`}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => decide(approval.id, 'approved')}
+                        aria-label={`Approve ${approval.actionClass} action for run ${id.slice(0, 8)}`}
+                      >
+                        Approve
+                      </button>
+                    </div>
                   ) : approval.status === 'approved' ? (
-                    <span>
+                    <div className="approvalActions">
                       <em>approved</em>
-                      <button onClick={() => decide(approval.id, 'approved')}>
+                      <button
+                        onClick={() => decide(approval.id, 'approved')}
+                        aria-label={`Retry integration for run ${id.slice(0, 8)}`}
+                      >
                         Retry integration
                       </button>
-                    </span>
+                    </div>
                   ) : (
                     <em>{approval.status}</em>
                   )}

@@ -14,6 +14,7 @@ import { runtimeCommand } from './runtime.js';
 import { statusCommand } from './status.js';
 import { verifyAuditCommand } from './verify-audit.js';
 import { tier0IngestCommand } from './tier0-ingest.js';
+import { localScoreboardCommand } from './local-scoreboard.js';
 
 export const commands: readonly Command[] = [
   haltCommand,
@@ -26,4 +27,5 @@ export const commands: readonly Command[] = [
   nodeWatchCommand,
   digestCommand,
   runtimeCommand,
+  localScoreboardCommand,
 ];

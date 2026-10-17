@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
+import { ApprovalAction } from './approval-action';
 type Run = {
   id: string;
   objective: string;
@@ -419,15 +420,17 @@ export function Dashboard() {
           </div>
           {approvals.length ? (
             approvals.map((approval) => (
-              <div className="diagnostic" key={approval.id}>
-                <div>
+              <div className="approval" key={approval.id}>
+                <div className="approvalBody">
                   <b>{approval.actionClass} action</b>
                   <small>
                     Run {approval.runId.slice(0, 8)} · expires{' '}
                     {new Date(approval.expiresAt).toLocaleString()}
                   </small>
-                  <code>{approval.normalizedAction}</code>
-                  <code>{approval.scope}</code>
+                  <ApprovalAction
+                    normalizedAction={approval.normalizedAction}
+                    scope={approval.scope}
+                  />
                 </div>
                 <div className="approvalActions">
                   <button

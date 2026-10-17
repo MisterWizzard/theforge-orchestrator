@@ -664,6 +664,20 @@ $env:FORGE_OLLAMA_SMOKE = '1'; pnpm exec vitest run packages/provider-ollama   #
 
 **Failure shapes.** A refused or reset connection is a retryable `PROCESS_EXIT`; a 4xx (unknown model: `model 'x' not found`) is not retryable; a 5xx is. `request.timeoutMs` produces `TIMEOUT` (retryable), the caller's abort `CANCELLED`, a reply over the 10 MB output bound `OUTPUT_LIMIT`, a reply cut off at the context limit (`done_reason: length`) `OUTPUT_TRUNCATED`, and a reply that misses the schema `STRUCTURED_OUTPUT_INVALID` - all non-retryable, with the message saying which.
 
+## Local-model scoreboard and skills (ADR-045)
+
+**Measuring the local model.** `pnpm forge local-scoreboard` replays recent runs through the local model and scores the result against what Claude wrote for the same run:
+
+```powershell
+pnpm forge local-scoreboard                       # the last 8 Claude runs, baseline only
+pnpm forge local-scoreboard --compare             # baseline and skills side by side
+pnpm forge local-scoreboard --limit=20 --roles=planner --model=devstral-small-2:latest
+```
+
+It rebuilds the planner and critic prompts with the pipeline's own prompt builders, sends them to Ollama (`FORGE_OLLAMA_URL`), and scores both answers on the rubric in `packages/cli/src/scoreboard.ts`. The report goes to `<outbox>/scoreboard/scoreboard-<time>.md` and `.json` (`--out=<dir>` overrides), and the Markdown is printed. It reads the database and writes nothing to it. Each local call takes tens of seconds on the 3090 and loads `devstral-small-2` if it is not resident, so run it when the GPU is free; a call that fails is listed in the report rather than stopping the board.
+
+**Turning the skills on.** `FORGE_LOCAL_SKILLS=on` in `.env`, then restart the Coordinator and the Worker. For stages routed to a local model only, the worker's Ollama adapter adds the role's playbook to the system message, and the pipeline adds the repository's own conventions as context (its package scripts and the most relevant passages of `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `docs/CONTRIBUTING.md` and `README.md`, at most 6,000 characters). Cloud stages are unchanged. Leave it off until `--compare` shows the skills variant ahead; ADR-045 records the numbers.
+
 ## Routing and fallback in the pipeline
 
 Every pipeline stage is placed before its provider is called (ADR-022; `docs/EXECUTION_PROTOCOL.md` "Routing and fallback"). What an operator sees in the run's events:
@@ -684,6 +698,8 @@ Every pipeline stage is placed before its provider is called (ADR-022; `docs/EXE
 A run works in `<FORGE_WORKSPACE_ROOT>/worktrees/<run id>-implementation`, a worktree of the bare cache `<FORGE_WORKSPACE_ROOT>/cache/<project>.git` on the branch `forge/<first 8 characters of the run id>`. Every start and every resume goes through `GitWorkspaceRuntime.createWorktree` (`packages/git-runtime/src/index.ts`), which now recovers the partial state an earlier run can leave instead of failing on it. Each case below is a regression test in `packages/git-runtime/src/git.test.ts`, run against git 2.55 on Windows with the managed root inside this checkout - the same layout as the default `.forge/workspaces`.
 
 **The cache follows the remote (ADR-040, BLK-032).** `register` clones the bare cache once and thereafter sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*` and fetches with `--prune` on every call, so `refs/remotes/origin/<branch>` is the remote's current tip. `createWorktree` starts a new worktree from `origin/<baseRef>` when it exists and otherwise from `baseRef` as given (a tag, a commit hash). The cache's own local `main` is no longer read: it is frozen at the first clone, and before this fix that was the commit every objective was built on. To see whether a cache is current: `git --git-dir <cache> rev-parse refs/remotes/origin/main` against `git ls-remote origin refs/heads/main`.
+
+**Failing checks are repaired, not final (ADR-042, BLK-033).** The builder's prompt names every command the pipeline will run and says each must exit 0 (`renderCheckBrief`). If a check still fails after a build, the failing commands and the tail of their output (3,000 characters each, quoted as data) go back to the builder with the run's constraints, and verification runs again. Failing checks and rejected reviews share one budget of three repair rounds (`MAX_REPAIR_ROUNDS`), so a run costs at most three builder calls more than a clean one, about $0.5-0.6 each on a real repository. The run still ends, as `partially_completed`, on a failed install (the builder cannot repair a registry), on a repair that leaves the worktree unchanged, and when the budget is spent; the blocker says which. The ledger shows it as `repair.started` with `{ reason: 'checks' | 'review', round, of, failing | findings }`, and a `verification.completed` carrying `afterRepairs`. To resume a run that still stopped on a check, fix the files in its preserved worktree and use the run's retry control: it re-verifies from the checkpoint without rebuilding.
 
 **What `createWorktree` recovers from.**
 

@@ -1198,6 +1198,7 @@ app.post('/api/runs/:id/start', async (request, reply) => {
         repositoryUrl: project.repositoryUrl,
         projectId: project.id,
         baseRef: started.configuration?.targetBranch ?? project.baseRef,
+        localSkills: env.FORGE_LOCAL_SKILLS === 'on',
         branch: `forge/${id.slice(0, 8)}`,
         checks: project.checks,
         install: project.install,

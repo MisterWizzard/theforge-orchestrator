@@ -20,8 +20,8 @@ A coding agent given a whole objective will happily rewrite things it was not as
 
 - a planner writes the plan and a critic attacks it before any code is written;
 - a builder edits files only inside an isolated copy of the repository;
-- deterministic checks (install, lint, typecheck, tests) run against the result first, and a failing check stops the run with a recorded blocker;
-- a reviewer reads the diff against the plan; its blocking findings go back to the builder, with the checks re-run after each repair, for up to three review rounds (so at most two repairs), and approval is decided from the findings rather than from the reviewer’s own "approved" flag;
+- deterministic checks (install, lint, typecheck, tests) run against the result first; the builder is told exactly which ones will run, and a failing check goes back to it with the failing output before the checks run again. A failed install, a repair that changes nothing, or an exhausted repair budget stops the run with a recorded blocker;
+- a reviewer reads the diff against the plan; its blocking findings go back to the builder, with the checks re-run after each repair, for up to three review rounds, and approval is decided from the findings rather than from the reviewer’s own "approved" flag. Check repairs and review repairs share one budget of three repairs, so a run cannot loop between the two;
 - pushing a branch and opening a pull request wait for a human decision.
 
 Run events are written to an append-only, hash-chained log in PostgreSQL, so a run can be audited afterwards, and after a crash the operator can restart it from its recorded stage events.

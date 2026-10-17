@@ -272,16 +272,6 @@ a:focus-visible {
 .formFoot button:disabled {
   opacity: 0.55;
 }
-.approvalActions {
-  display: flex;
-  gap: 8px;
-}
-.approvalActions button {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -531,35 +521,133 @@ a:focus-visible {
   border-radius: 8px;
   padding: 9px 14px;
 }
+/* An approval is content, then its decision buttons. The content takes the row
+   when it fits; otherwise the buttons wrap underneath instead of hanging off the
+   card or being squeezed into a one-letter-wide column. */
 .approval {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 12px 0;
+  min-width: 0;
+  padding: 14px 0;
   border-top: 1px solid var(--line);
 }
-.approval > div {
-  display: grid;
-}
-.approval b {
-  font-size: 11px;
-}
-.approval small,
-.approval em {
-  margin-top: 4px;
+.approval > em {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-style: normal;
   text-transform: capitalize;
 }
-.approval button {
+.approvalBody {
+  display: grid;
+  flex: 1 1 24rem;
+  gap: 4px;
+  min-width: 0;
+}
+.approvalBody > b {
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.approvalBody > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.approvalDetail {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 6px;
+}
+.approvalCommand,
+.approvalRaw pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 9rem;
+  overflow: auto;
+  background: #eceae0;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 8px;
+  font:
+    12px/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.approvalRaw pre {
+  margin-top: 4px;
+  max-height: 14rem;
+  font-size: 11px;
+}
+.approvalFacts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+}
+.approvalFacts > div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) minmax(0, 1fr);
+  gap: 10px;
+}
+.approvalFacts dt {
+  color: var(--muted);
+}
+.approvalFacts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.approvalFacts dd.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+.approvalRaw summary {
+  display: list-item;
+  list-style-position: inside;
+  padding: 14px 0;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.approvalActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.approvalActions button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   background: transparent;
-  padding: 7px 9px;
-  margin-left: 6px;
-  font-size: 10px;
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.approvalActions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.approvalActions em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  text-transform: capitalize;
+}
+@media (max-width: 560px) {
+  .approvalFacts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
 }
 .detailGrid {
   display: grid;

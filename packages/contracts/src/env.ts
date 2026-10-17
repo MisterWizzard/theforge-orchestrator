@@ -106,6 +106,8 @@ export const ENVIRONMENT_REMEDIES: Readonly<Record<string, string>> = {
   FORGE_TASK_MAX_MINUTES: 'a whole number from 1 to 1440 of wall-clock minutes per provider job',
   FORGE_TASK_MAX_TOKENS: 'a whole number from 1000 to 100000000 of tokens per provider job',
   FORGE_OLLAMA_URL: 'the local Ollama base URL, e.g. http://127.0.0.1:11434',
+  FORGE_LOCAL_SKILLS:
+    'on or off: role playbooks and repository conventions for stages routed to a local model (ADR-045)',
   FORGE_OLLAMA_NUM_CTX_TIER1: 'a whole number from 512 to 1048576 for the tier-1 model context',
   FORGE_OLLAMA_NUM_CTX_TIER2: 'a whole number from 512 to 1048576 for the tier-2 model context',
   FORGE_FAILED_WORKSPACE_KEEP:

@@ -1,3 +1,4 @@
+import { playbookFor } from './playbooks.js';
 import type { ProviderEvent, ProviderRequest } from '@theforge/contracts';
 import {
   parseStructuredOutput,
@@ -44,6 +45,11 @@ export type OllamaAdapterOptions = {
    * `off` never sends the field.
    */
   think?: 'auto' | 'off';
+  /**
+   * Adds the role's playbook to the system message (ADR-045). Off by default; the worker turns it
+   * on with `FORGE_LOCAL_SKILLS=on`.
+   */
+  playbooks?: boolean;
 };
 
 export type OllamaModel = {
@@ -104,6 +110,7 @@ export class OllamaAdapter implements ProviderAdapter {
   private readonly fetch: FetchLike;
   private readonly maxOutputBytes: number;
   private readonly think: 'auto' | 'off';
+  private readonly playbooks: boolean;
   /** Per model: whether `/api/show` listed the `thinking` capability. */
   private readonly thinking = new Map<string, boolean>();
 
@@ -115,6 +122,7 @@ export class OllamaAdapter implements ProviderAdapter {
     this.fetch = options.fetch ?? fetch;
     this.maxOutputBytes = options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
     this.think = options.think ?? 'auto';
+    this.playbooks = options.playbooks ?? false;
   }
 
   /** Reachable is available: Ollama has no authentication. The detail says which models exist. */
@@ -171,7 +179,7 @@ export class OllamaAdapter implements ProviderAdapter {
       const think = await this.supportsThinking(model, deadline.signal);
       const body = {
         model,
-        messages: buildOllamaMessages(request),
+        messages: buildOllamaMessages(request, { playbooks: this.playbooks }),
         stream: true,
         options: { temperature: 0, ...(this.numCtx === undefined ? {} : { num_ctx: this.numCtx }) },
         ...(this.keepAlive === undefined ? {} : { keep_alive: this.keepAlive }),
@@ -314,9 +322,14 @@ export class OllamaAdapter implements ProviderAdapter {
 }
 
 /** The two-message conversation a request becomes: role preamble, then prompt and context. */
-export function buildOllamaMessages(request: ProviderRequest): OllamaChatMessage[] {
+export function buildOllamaMessages(
+  request: ProviderRequest,
+  options: { playbooks?: boolean } = {},
+): OllamaChatMessage[] {
+  const playbook = options.playbooks ? playbookFor(request.role) : undefined;
+  const system = `${ROLE_PREAMBLES[request.role]} ${COMMON_PREAMBLE}`;
   return [
-    { role: 'system', content: `${ROLE_PREAMBLES[request.role]} ${COMMON_PREAMBLE}` },
+    { role: 'system', content: playbook ? `${system}\n\n${playbook}` : system },
     { role: 'user', content: buildPrompt(request) },
   ];
 }
@@ -570,3 +583,5 @@ function isConnectionError(error: unknown): boolean {
   // cause carries the code when there is one.
   return /fetch failed|socket hang up|ECONNREFUSED|ECONNRESET/i.test(describeError(error));
 }
+
+export { PLAYBOOKS, playbookFor } from './playbooks.js';

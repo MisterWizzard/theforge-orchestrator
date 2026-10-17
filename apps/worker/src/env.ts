@@ -52,6 +52,8 @@ export const WorkerEnvironmentSchema = z.object({
   // probes this server at startup and advertises `provider:ollama` plus one
   // `model:<name>` per listed model; an ollama job runs in this process.
   FORGE_OLLAMA_URL: z.string().url().default('http://127.0.0.1:11434'),
+  /** Role playbooks in the local model's system message (ADR-045). */
+  FORGE_LOCAL_SKILLS: z.enum(['on', 'off']).default('off'),
   // `num_ctx` per tier, the measured sweet spots from
   // docs/evidence-local-model-benchmark-2-2026-09-26.txt: tier 1 (qwen3:8b)
   // 5.9 GB resident at 8192, tier 2 (devstral-small-2) 15.8 GB at 16384.

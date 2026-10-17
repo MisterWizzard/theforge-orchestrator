@@ -133,6 +133,8 @@ export const CoordinatorEnvironmentSchema = z.object({
    * (docs/OPERATIONS.md "Waiting for a worker after a restart").
    */
   FORGE_PROVIDER_WAIT_MS: z.coerce.number().int().min(0).max(3_600_000).default(90_000),
+  /** Repository conventions as context for stages routed to a local model (ADR-045). */
+  FORGE_LOCAL_SKILLS: z.enum(['on', 'off']).default('off'),
 });
 export type CoordinatorEnvironment = z.infer<typeof CoordinatorEnvironmentSchema>;
 

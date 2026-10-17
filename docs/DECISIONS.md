@@ -1280,3 +1280,136 @@ HEAD was `75aea598`, GitHub's current `main`. The live cache itself was not touc
 reads `2a8bd4cf`.
 
 **Supersedes / superseded by:** resolves BLK-032; nothing superseded.
+## ADR-042 - failing deterministic checks are repaired, and the builder is told which checks will run
+
+**Date:** 2026-10-14
+**Status:** accepted
+
+### Context
+
+BLK-033. Run `c2e9473d` (shopfront, 14/10/2026) wrote 27 good tests for `src/lib/admin/order-filters.ts`.
+Lint, typecheck and the tests passed; `npm run format:check` failed on a single `expect(...)` that
+Prettier wanted on one line. The pipeline ended the run on the spot (`partially_completed`,
+"Deterministic checks failed before review") at $1.99, with no review and no repair attempt. Two
+causes, both in `packages/workflows`:
+
+1. **The builder was never told which checks would run.** Its prompt said "run relevant local
+   checks", so it ran the three it thought relevant and not the formatter.
+2. **A failing check was final.** After the first build, any non-zero check returned immediately. The
+   repair loop (rounds of builder calls) existed, but only for the _reviewer's_ rejections, and it
+   re-ran the checks afterwards and again ended the run if one failed. `repairing` was a legal state
+   after `verifying` in the domain, and nothing used it.
+
+### Decision
+
+**Part 1: tell the builder.** `renderCheckBrief` names every command the pipeline will run, and the
+install that precedes them, says every one must exit 0, tells the builder to run them itself, and says
+to use the repository's formatter (the matching `--write` form) when a formatting check fails. With no
+checks configured the old generic sentence stands.
+
+**Part 2: repair a failing check.** When verification fails, the failing commands and the tail of their
+output (3,000 characters each, quoted as data from a tool, not instructions) go back to the builder in a
+focused brief that also carries the run's constraints, then verification runs again.
+
+- **One budget for every kind of repair:** `MAX_REPAIR_ROUNDS = 3`, shared by failing checks and
+  rejected reviews. A run cannot loop between "the checks fail" and "the reviewer objects". The review
+  loop is otherwise unchanged (up to three reviews, so up to two review-driven repairs).
+- **A failed install still ends the run.** The builder cannot repair a registry or DNS. This is
+  checked by comparing the failing command with the project's install commands.
+- **A repair that changes nothing ends the run**, since the same checks would fail again. This reuses
+  the workspace-snapshot test the review loop already had.
+- **A review repair that breaks a check is itself repaired**, from the same budget, where before it
+  ended the run ("Deterministic checks failed after repair").
+- **Events.** New `repair.started` with `{ reason: 'checks' | 'review', round, of, failing | findings }`;
+  `verification.completed` after a repair carries `afterRepairs`, and is now also emitted after a
+  review repair, where it was not before.
+
+### Consequences
+
+- **Cost is bounded.** A repair is one builder call, about $0.5-0.6 on a real repository; the worst case
+  adds three, about $1.8, on top of a run that would otherwise have stopped with its money spent.
+- **A check failure now gets a repair, but the run state does not change.** The repair loop runs
+  inside the `executing` state and is visible as `repair.started` events; neither the pipeline nor
+  the coordinator moves the run into `repairing` (corrected 17/10/2026: an earlier version of this
+  record said it did). ADR-035's second condition asks for a failure routed to repairing and coming
+  back out, so it is not met by this change, and **no live recovery has been observed** yet either.
+- Nothing about the daily cap changes: a repair is a builder call, estimated and guarded like any other,
+  and at the cap it stops the run as a builder stage does (ADR-022).
+- The digest does not yet summarise `repair.started`. Deferred; the events are in the ledger.
+
+### Verified
+
+Twelve tests in `packages/workflows/src/pipeline-checks.test.ts`: the brief (four) and the repair
+behaviour (eight): a failing formatter is sent back and the run reaches review; a failed install still
+ends it; an unchanged repair ends it; the budget stops after exactly three repairs; the budget is shared
+with the review loop; a review repair that breaks a check is repaired; constraints reach the repair
+brief; a clean build never repairs. **Six of the twelve fail when the budget is set to zero**, which is
+the old "first failure is final" behaviour; the other two are guards that pass either way. All 76
+existing workflow tests pass unchanged; the full gate is in the pull request.
+
+**Not verified live.** It needs a merge, a rebuild and a restart of the Coordinator, and a real run whose
+first build fails a check.
+
+**Supersedes / superseded by:** adds the repair behaviour ADR-035's second condition is about, without
+the `repairing` run state it names; builds on ADR-022 (the guard still applies to repair builder calls).
+
+## ADR-044 - Claude is authenticated with an API key only
+
+**Status:** accepted
+
+Claude is configured with `ANTHROPIC_API_KEY` only. The worker offers no Claude login-file
+credential, the sandbox entrypoint accepts an auth file for Codex only, and the run form lists
+Claude and Codex. Every Claude call is metered, so the daily ceiling and the monthly budget
+count all of it. The full record is withheld from this published copy.
+
+## ADR-045 - a scoreboard for the local model, and role playbooks with repository conventions (local-model skills, phases 0 and 1)
+
+**Date:** 2026-10-17
+**Status:** accepted (the operator approved phases 0 and 1 on 17/10/2026; both are opt-in until measured)
+
+### Context
+
+At the daily ceiling the planner and the critic can run on the local tier-2 model (`devstral-small-2`, ADR-022), while the builder and the reviewer stop. The local model has no tools: it cannot read the repository, run a command or check that a path exists, and it gets the same prompt the cloud planner gets. Whether its plans are good enough to build from has never been measured, so any change to how it is prompted would be a guess. `AGENTS.md` defers work that does not move the release conditions; the operator chose to do these two phases anyway, and this record is that decision.
+
+### Decision
+
+**Phase 0: measure first.** `pnpm forge local-scoreboard` takes recent runs whose plan Claude wrote (the critic is replayed where Claude also wrote the critique), rebuilds the planner and critic prompts with the pipeline's own prompt builders (`packages/workflows/src/prompts.ts`, now the single copy the pipeline uses too), sends them to the local model through the existing Ollama adapter, and scores Claude's answer and the local answer on the same deterministic rubric (`packages/cli/src/scoreboard.ts`): for a plan, acceptance criteria, file ownership, risks, exact check commands, the objective's paths named, test-only constraints respected and a usable size; for a critique, concrete findings, findings grounded in the plan, tests covered, constraints acknowledged, severity stated and no rubber stamp. It writes JSON and Markdown under the outbox. It reads the database and writes nothing to it.
+
+- The critic is given Claude's plan, so both critics answer the same input.
+- The planner's repository context is `git status --short --branch` of a fresh worktree; the scoreboard reproduces it up to the upstream name.
+- The rubric checks properties the next stage depends on. A high score does not prove a good plan; a low one reliably finds a plan the builder would have to guess around.
+
+**Phase 1: playbooks and conventions, behind one switch.** `FORGE_LOCAL_SKILLS=on` (default `off`, read by the coordinator and the worker) does two things, for stages routed to a local model only:
+
+- the worker's Ollama adapter appends a short role playbook to the system message (`packages/provider-ollama/src/playbooks.ts`): the headings the pipeline expects, how to treat constraints, and "write an assumption rather than invent code you have not seen";
+- the pipeline passes the repository's own conventions as context: the package scripts, and the passages of `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md` and `README.md` most relevant to the objective (`packages/workflows/src/repo-context.ts`, at most 6,000 characters), read from the run's worktree on the coordinator. The text goes to the model as untrusted reference material, inside the existing context wrapper.
+
+Cloud stages are unchanged whether the switch is on or off.
+
+**Retrieval is lexical, not embeddings.** The plan named `nomic-embed-text`. Embeddings would need the coordinator to call the model server directly; today the model server is reached only through a worker job, and `docs/SECURITY.md` keeps it that way. Term overlap weighted by rarity, over a handful of short convention files, is enough to pick the right passages; if the scoreboard shows retrieval is what limits the local plans, embeddings can come back as a worker job type in a later decision.
+
+### Consequences
+
+- The switch is off by default. It was to stay off until the scoreboard, run with `--compare` on real runs, showed the skills variant ahead; it did (see "Verified"), and the operator's runtime has run with `FORGE_LOCAL_SKILLS=on` since 17/10/2026.
+- Phases 2 and 3 (read-only tools, a local builder) stay undecided; phase 0's numbers are the input to that decision.
+- The CLI now depends on `@theforge/workflows` and `@theforge/provider-ollama`.
+
+### Verified
+
+Unit tests: the rubric (a complete plan passes every check; a plan that edits a production file under a test-only constraint fails one; a rubber-stamp critique fails), the replay (the pipeline's prompts are sent, the critic gets Claude's plan, the skills variant alone carries playbooks and context, a failed local call is recorded rather than fatal), the context selection (scripts first, the relevant passage chosen, the character budget kept), the playbooks (the system message is unchanged when off) and the prompt builders (the exact strings the pipeline has always sent). The first scoreboard run:
+
+**First scoreboard, 17/10/2026** (`pnpm forge local-scoreboard --limit=8 --compare`, `devstral-small-2:latest` on the RTX 3090, the 8 most recent runs whose plan Claude wrote; fraction of rubric checks passed):
+
+| role | variant | runs | Claude | local | gap | local seconds |
+| --- | --- | --- | --- | --- | --- | --- |
+| planner | baseline | 8 | 0.93 | 0.59 | 0.34 | 22 |
+| planner | skills | 8 | 0.93 | 0.93 | 0.00 | 15 |
+| critic | baseline | 7 | 0.88 | 0.74 | 0.14 | 46 |
+| critic | skills | 8 | 0.90 | 0.85 | 0.04 | 26 |
+
+One baseline critic call timed out at 600 s and is excluded, which is why that row has 7 runs.
+
+**Read this with care.** Part of the planner's gain is circular: the playbook asks for the headings the rubric looks for, so "acceptance criteria" and "file ownership" (missed in all 8 baseline plans) were bound to improve. The gains that are not circular are the check commands (the repository's real scripts are now in context: misses fell from 7 to 4) and, for the critic, concrete findings (missed 6 times in the baseline, never with skills) and stated severity. The rubric says nothing about whether a local plan is *correct*; that needs a real ceiling-routed run, or phase 2's tools. On this evidence the switch is worth turning on: it changes only local stages at the ceiling, and it never made a score worse.
+
+
+**Supersedes / superseded by:** builds on ADR-021 and ADR-022 (local tiers and the ceiling); does not change routing.

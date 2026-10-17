@@ -1504,6 +1504,7 @@ async function createProviderForJob(
       provider: new OllamaAdapter({
         baseUrl: options.ollamaUrl ?? env.FORGE_OLLAMA_URL,
         ...(numCtx === undefined ? {} : { numCtx }),
+        playbooks: env.FORGE_LOCAL_SKILLS === 'on',
       }),
       redactionValues: [],
     };

@@ -176,11 +176,17 @@ suite('deterministic black-box release acceptance', () => {
       'partially_completed',
       180_000,
     );
+    // An event is stored before the blocker, decision and artefact rows derived from it, so a
+    // read straight after `run.finished` can see the event without its blocker on a slow runner.
     await waitUntil(async () => {
       detail = await getJson<RunDetail>(`${api}/api/runs/${created.run.id}`, headers);
       return (
         detail.events.some((event) => event.type === 'approval.requested') &&
-        detail.events.some((event) => event.type === 'run.finished')
+        detail.events.some((event) => event.type === 'run.finished') &&
+        detail.blockers.some(
+          (blocker) =>
+            blocker.status === 'active' && blocker.classification === 'technical_unknown',
+        )
       );
     }, 30_000);
     // Exact counts fail without saying why; the spawned processes' output does.

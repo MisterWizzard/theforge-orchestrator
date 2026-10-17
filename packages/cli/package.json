@@ -15,7 +15,9 @@
     "@theforge/db": "workspace:*",
     "@theforge/guardrails": "workspace:*",
     "@theforge/notify": "workspace:*",
-    "@theforge/tier0": "workspace:*"
+    "@theforge/provider-ollama": "workspace:*",
+    "@theforge/tier0": "workspace:*",
+    "@theforge/workflows": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.5.0"
